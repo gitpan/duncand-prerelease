@@ -20,7 +20,7 @@ CONTENTS
 
 PREFACE
 
-This distribution features 11 Perl 5 modules that all belong in the temporary 
+This distribution features 10 Perl 5 modules that all belong in the temporary 
 CGI::WPM::* namespace.  These modules are not officially registered, as they are 
 in a state of change.  As such they are subject to be renamed, some could be 
 split up and others combined.  However, they are perfectly usable as is.
@@ -90,20 +90,10 @@ and is a very solid release, so I see no reason to support anything older.
 
 Modules in this distribution require modules in these following distributions:
 
-HTML-EasyTags-1.03.tar.gz
+HTML-Application-0.38.tar.gz
 	- by Darren Duncan (DUNCAND)
-	- HTML::EasyTags 1.03 is required by:
-		- CGI::WPM::Globals (when assembling a final HTML page only)
-		- Anything that uses Globals except when redirection headers and usage
-
-MultiValuedHash-1.06.tar.gz
-	- by Darren Duncan (DUNCAND)
-	- CGI::MultiValuedHash 1.06 is required by:
-		- CGI::WPM::Globals (parsing user input)
-		- CGI::WPM::MailForm (for serializing file data)
-		- CGI::WPM::GuestBook (for serializing file data)
-		- Anything that uses Globals
-		- Anything that uses FormTemplate
+	- HTML::Application 0.38 is required by:
+		- CGI::WPM::Globals (as a superclass; for implementing its functionality)
 
 HTML-FormTemplate-1.05.tar.gz
 	- by Darren Duncan (DUNCAND)
@@ -168,8 +158,6 @@ MODULE LIST
 
 Here is a quick list of all the modules in the distribution, and what each is
 for.
-
-CGI::WPM::FileVirtualPath - Portable abstraction of a file/dir/url path.
 
 CGI::WPM::CountFile - Perl module that interfaces to a tab-delimited text file
 for storing date-bounded counts of occurances for multiple events, such as web
@@ -328,9 +316,10 @@ support issues later, so that users of my modules can help each other with them.
 TO DO
 
 	* Break the distribution up into several different ones, separating the 
-	generic functionality from the proprietary.  To date, 5 generic modules have 
-	already been split off into their own 4 distributions: Class-ParamParser, 
-	HTML-EasyTags, MultiValuedHash, HTML-FormTemplate.  Others will follow...
+	generic functionality from the proprietary.  To date, 7 generic modules have 
+	already been split off into their own 6 distributions: Class-ParamParser, 
+	HTML-EasyTags, MultiValuedHash, HTML-FormTemplate, File-VirtualPath, 
+	HTML-Application.  Others will follow...
 
 PROGRAM EXAMPLE
 

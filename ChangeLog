@@ -1,3 +1,28 @@
+2001-04-20   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.38.
+	
+	* The module CGI::WPM::FileVirtualPath has been renamed to File::VirtualPath 
+	and spun off into its own distribution, File-VirtualPath-1.0.
+	
+	* CGI::WPM::Globals has been split up into two modules, both of which are at 
+	version 0.38.  The new module is HTML::Application, which has also been spun 
+	off into its own distribution, HTML-Application-0.38.  This module handles 
+	all of the core functionality of the old Globals and adds new functionality.  
+	
+	* Since the new module has a very different interface, CGI::WPM::Globals 
+	continues to exist as a subclassed shim that allows older modules written to 
+	use the old Globals to use Application now without being changed.  This 
+	means that all of the other CGI::WPM::* modules are unchanged from before.  
+	The Globals shim also handles any actual user input or output that it did 
+	before since HTML::Application intentionally stays away from such.
+	
+	* Note that any future releases of this distribution will be set to use 
+	HTML::Application directly and will not be backwards compatible like this 
+	release 0.38 is.
+
+	* Following the above changes, Globals is 5K smaller.
+
 2001-04-12   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.37.

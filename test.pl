@@ -8,9 +8,8 @@
 
 BEGIN { $| = 1; print "1..1\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use CGI::WPM::FileVirtualPath 0.36;
 use CGI::WPM::CountFile 0.36;
-use CGI::WPM::Globals 0.36;
+use CGI::WPM::Globals 0.38;
 use CGI::WPM::Base 0.34;
 use CGI::WPM::MultiPage 0.34;
 use CGI::WPM::Static 0.34;

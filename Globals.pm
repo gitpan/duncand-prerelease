@@ -20,7 +20,7 @@ require 5.004;
 
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = '0.36';
+$VERSION = '0.38';
 
 ######################################################################
 
@@ -37,16 +37,14 @@ $VERSION = '0.36';
 
 =head2 Nonstandard Modules
 
-	CGI::MultiValuedHash 1.06
-	CGI::WPM::FileVirtualPath 0.36
-	HTML::EasyTags 1.03  # required in content_as_string() method only
+	HTML::Application 0.38
 
 =cut
 
 ######################################################################
 
-use CGI::MultiValuedHash 1.06;
-use CGI::WPM::FileVirtualPath 0.36;
+use HTML::Application 0.38;
+@ISA = qw( HTML::Application );
 
 ######################################################################
 
@@ -324,12 +322,12 @@ I<This POD is coming when I get the time to write it.>
 
 # This property is set by the calling code and may affect how certain 
 # areas of the program function, but it can be safely ignored.
-my $KEY_IS_DEBUG = 'is_debug';  # are we debugging the site or not?
+# my $KEY_IS_DEBUG = 'is_debug';  # are we debugging the site or not?
 
 # This property is set when a server-side problem causes the program 
 # to not function correctly.  This includes inability to load modules, 
 # inability to get preferences, inability to use e-mail or databases.
-my $KEY_SITE_ERRORS = 'site_errors'; # holds error string list, if any
+# my $KEY_SITE_ERRORS = 'site_errors'; # holds error string list, if any
 
 # These properties are set by the code which instantiates this object,
 # are operating system specific, and indicate where all the support 
@@ -339,20 +337,20 @@ my $KEY_SITE_ERRORS = 'site_errors'; # holds error string list, if any
 # subordinate page making modules can inherit (or override) properties 
 # of their parents, but any changes made won't affect the properties 
 # that the parents see (unless the parents allow it).
-my $KEY_PREFS   = 'site_prefs';  # settings from files in the srp
-my $KEY_SRP = 'srp_elements';  # site resource path (files)
-my $KEY_VRP = 'vrp_elements';  # virtual resource path (url)
+# my $KEY_PREFS   = 'site_prefs';  # settings from files in the srp
+# my $KEY_SRP = 'srp_elements';  # site resource path (files)
+# my $KEY_VRP = 'vrp_elements';  # virtual resource path (url)
 	# the above vrp is used soley when constructing new urls
 my $KEY_PREFS_STACK = 'prefs_stack';
 my $KEY_SRP_STACK   = 'srp_stack';
 my $KEY_VRP_STACK   = 'vrp_stack';
 
 # These properties are not recursive, but are unlikely to get edited
-my $KEY_USER_VRP = 'user_vrp';   # vrp that user is requesting
+# my $KEY_USER_VRP = 'user_vrp';   # vrp that user is requesting
 
 # These properties are used under the assumption that the vrp which 
 # the user provides us is in the query string.
-my $KEY_VRP_UIPN = 'uipn_vrp';  # query param that has vrp as its value
+# my $KEY_VRP_UIPN = 'uipn_vrp';  # query param that has vrp as its value
 
 # These properties are used in conjunction with sending e-mails.
 my $KEY_SMTP_HOST    = 'smtp_host';    # what computer sends our mail
@@ -364,10 +362,10 @@ my $KEY_OWNER_EM_VRP = 'owner_em_vrp'; # vrp for e-mail page
 
 # Constant values used in this class go here:
 
-my $DEF_VRP_UIPN = 'path';
+# my $DEF_VRP_UIPN = 'path';
 
-my $TALB = '[';  # left side of bounds for token replacement arguments
-my $TARB = ']';  # right side of same
+# my $TALB = '[';  # left side of bounds for token replacement arguments
+# my $TARB = ']';  # right side of same
 
 my $DEF_SMTP_HOST = 'localhost';
 my $DEF_SMTP_TIMEOUT = 30;
@@ -385,17 +383,17 @@ my $KEY_INITIAL_UI = 'ui_initial_user_input';
 	my $IKEY_OVERSIZE = 'is_oversize_post'; # true if cont len >max
 
 # These properties are not recursive, but are unlikely to get edited
-my $KEY_USER_COOKIE = 'ui_user_cookie'; # settings from browser cookies
-my $KEY_USER_INPUT  = 'ui_user_input';  # settings from browser query/post
+# my $KEY_USER_COOKIE = 'ui_user_cookie'; # settings from browser cookies
+# my $KEY_USER_INPUT  = 'ui_user_input';  # settings from browser query/post
 
 # These properties keep track of important user/pref data that should
 # be returned to the browser even if not recognized by subordinates.
-my $KEY_PERSIST_QUERY  = 'ui_persist_query';  # which qp persist for session
+# my $KEY_PERSIST_QUERY  = 'ui_persist_query';  # which qp persist for session
 	# this is used only when constructing new urls, and it stores just 
 	# the names of user input params whose values we are to return.
 
 # These properties relate to output headers
-my $KEY_REDIRECT_URL = 'uo_redirect_url';  # if def, str is redir header
+# my $KEY_REDIRECT_URL = 'uo_redirect_url';  # if def, str is redir header
 
 # Constant values used in this class go here:
 
@@ -403,14 +401,14 @@ my $MAX_CONTENT_LENGTH = 100_000;  # currently limited to 100 kbytes
 my $UIP_KEYWORDS = '.keywords';  # user input param for ISINDEX queries
 
 # Names of properties for objects of this class are declared here:
-my $KEY_MAIN_BODY = 'uo_main_body';  # array of text -> <BODY>*</BODY>
-my $KEY_MAIN_HEAD = 'uo_main_head';  # array of text -> <HEAD>*</HEAD>
-my $KEY_TITLE     = 'uo_title';      # scalar of document title -> head
-my $KEY_AUTHOR    = 'uo_author';     # scalar of document author -> head
-my $KEY_META      = 'uo_meta';       # hash of meta keys/values -> head
-my $KEY_CSS_SRC   = 'uo_css_src';    # array of text -> head
-my $KEY_CSS_CODE  = 'uo_css_code';   # array of text -> head
-my $KEY_BODY_ATTR = 'uo_body_attr';  # hash of attrs -> <BODY *>
+# my $KEY_MAIN_BODY = 'uo_main_body';  # array of text -> <BODY>*</BODY>
+# my $KEY_MAIN_HEAD = 'uo_main_head';  # array of text -> <HEAD>*</HEAD>
+# my $KEY_TITLE     = 'uo_title';      # scalar of document title -> head
+# my $KEY_AUTHOR    = 'uo_author';     # scalar of document author -> head
+# my $KEY_META      = 'uo_meta';       # hash of meta keys/values -> head
+# my $KEY_CSS_SRC   = 'uo_css_src';    # array of text -> head
+# my $KEY_CSS_CODE  = 'uo_css_code';   # array of text -> head
+# my $KEY_BODY_ATTR = 'uo_body_attr';  # hash of attrs -> <BODY *>
 my $KEY_REPLACE   = 'uo_replace';  # array of hashes, find and replace
 
 ######################################################################
@@ -427,6 +425,12 @@ sub new {
 sub initialize {
 	my ($self, $root, $delim, $prefs, $user_input) = @_;
 
+	$self->SUPER::initialize( $root, $delim, $prefs );
+
+	$self->url_base( $self->base_url() );
+	$self->url_path_is_in_path_info( 0 );
+	$self->url_path_is_in_query( 1 );
+
 	if( $self->is_mod_perl() ) {
 		require Apache;
 		$| = 1;
@@ -434,46 +438,25 @@ sub initialize {
 	
 	$self->{$KEY_INITIAL_UI} ||= $self->get_initial_user_input();
 	
-	$self->{$KEY_USER_COOKIE} = $self->parse_url_encoded_cookies( 1, 
+	$self->user_cookies( $self->parse_url_encoded_cookies( 1, 
 		$self->user_cookie_str() 
-	);
-	$self->{$KEY_USER_INPUT} = $self->parse_url_encoded_queries( 1, 
+	) );
+	$self->user_query( $self->parse_url_encoded_queries( 1, 
 		$self->user_query_str(), 
 		$self->user_post_str(), 
 		$self->user_offline_str() 
-	);
-	$self->{$KEY_PERSIST_QUERY} = {};
-	$self->{$KEY_REDIRECT_URL} = undef;
+	) );
 	
-	$self->user_input( $user_input );
+	$self->user_query( $user_input );
 
-	$self->{$KEY_MAIN_BODY} = [];
-	$self->{$KEY_MAIN_HEAD} = [];
-	$self->{$KEY_TITLE} = undef;
-	$self->{$KEY_AUTHOR} = undef;
-	$self->{$KEY_META} = {};
-	$self->{$KEY_CSS_SRC} = [];
-	$self->{$KEY_CSS_CODE} = [];	
-	$self->{$KEY_BODY_ATTR} = {};
 	$self->{$KEY_REPLACE} = [];
 
 	%{$self} = (
 		%{$self},
 		
-		$KEY_IS_DEBUG => undef,
-		
-		$KEY_SITE_ERRORS => [],
-		
-		$KEY_PREFS => {},
-		$KEY_SRP   => CGI::WPM::FileVirtualPath->new(),
-		$KEY_VRP   => CGI::WPM::FileVirtualPath->new(),
 		$KEY_PREFS_STACK => [],
 		$KEY_SRP_STACK   => [],
 		$KEY_VRP_STACK   => [],
-		
-		$KEY_USER_VRP => CGI::WPM::FileVirtualPath->new(),
-		
-		$KEY_VRP_UIPN => $DEF_VRP_UIPN,
 		
 		$KEY_SMTP_HOST => $DEF_SMTP_HOST,
 		$KEY_SMTP_TIMEOUT => $DEF_SMTP_TIMEOUT,
@@ -482,10 +465,6 @@ sub initialize {
 		$KEY_OWNER_EMAIL => undef,
 		$KEY_OWNER_EM_VRP => undef,
 	);
-
-	$self->site_root_dir( $root );
-	$self->system_path_delimiter( $delim );
-	$self->site_prefs( $prefs );
 }
 
 ######################################################################
@@ -504,39 +483,18 @@ are not changed.
 ######################################################################
 
 sub clone {
-	my ($self, $clone, @args) = @_;
+	my ($self, $clone) = @_;
 	ref($clone) eq ref($self) or $clone = bless( {}, ref($self) );
+	
+	$clone = $self->SUPER::clone( $clone );
 
 	$clone->{$KEY_INITIAL_UI} = $self->{$KEY_INITIAL_UI};  # copy reference
-	$clone->{$KEY_USER_COOKIE} = $self->{$KEY_USER_COOKIE}->clone();
-	$clone->{$KEY_USER_INPUT} = $self->{$KEY_USER_INPUT}->clone();
-	$clone->{$KEY_PERSIST_QUERY} = {%{$self->{$KEY_PERSIST_QUERY}}};
-	$clone->{$KEY_REDIRECT_URL} = $self->{$KEY_REDIRECT_URL};
 
-	$clone->{$KEY_MAIN_BODY} = [@{$self->{$KEY_MAIN_BODY}}];
-	$clone->{$KEY_MAIN_HEAD} = [@{$self->{$KEY_MAIN_HEAD}}];
-	$clone->{$KEY_TITLE} = $self->{$KEY_TITLE};
-	$clone->{$KEY_AUTHOR} = $self->{$KEY_AUTHOR};
-	$clone->{$KEY_META} = {%{$self->{$KEY_META}}};
-	$clone->{$KEY_CSS_SRC} = [@{$self->{$KEY_CSS_SRC}}];
-	$clone->{$KEY_CSS_CODE} = [@{$self->{$KEY_CSS_CODE}}];
-	$clone->{$KEY_BODY_ATTR} = {%{$self->{$KEY_BODY_ATTR}}};
 	$clone->{$KEY_REPLACE} = $self->replacements();  # makes copy
 	
-	$clone->{$KEY_IS_DEBUG} = $self->{$KEY_IS_DEBUG};
-
-	$clone->{$KEY_SITE_ERRORS} = [@{$self->{$KEY_SITE_ERRORS}}];
-	
-	$clone->{$KEY_PREFS} = {%{$self->{$KEY_PREFS}}};
-	$clone->{$KEY_SRP} = $self->{$KEY_SRP}->clone();
-	$clone->{$KEY_VRP} = $self->{$KEY_VRP}->clone();
 	$clone->{$KEY_PREFS_STACK} = [@{$self->{$KEY_PREFS_STACK}}];
 	$clone->{$KEY_SRP_STACK} = [map { $_->clone() } @{$self->{$KEY_SRP_STACK}}];
 	$clone->{$KEY_VRP_STACK} = [map { $_->clone() } @{$self->{$KEY_VRP_STACK}}];
-
-	$clone->{$KEY_USER_VRP} = $self->{$KEY_USER_VRP}->clone();
-
-	$clone->{$KEY_VRP_UIPN} = $self->{$KEY_VRP_UIPN};
 
 	$clone->{$KEY_SMTP_HOST} = $self->{$KEY_SMTP_HOST};
 	$clone->{$KEY_SMTP_TIMEOUT} = $self->{$KEY_SMTP_TIMEOUT};
@@ -550,87 +508,52 @@ sub clone {
 
 ######################################################################
 
-sub is_debug {
-	my $self = shift( @_ );
-	if( defined( my $new_value = shift( @_ ) ) ) {
-		$self->{$KEY_IS_DEBUG} = $new_value;
-	}
-	return( $self->{$KEY_IS_DEBUG} );
-}
-
-######################################################################
-
-sub get_errors {
-	return( grep { defined($_) } @{$_[0]->{$KEY_SITE_ERRORS}} );
-}
-
-sub get_error {
-	my ($self, $index) = @_;
-	defined( $index ) or $index = -1;
-	return( $self->{$KEY_SITE_ERRORS}->[$index] );
-}
-
-sub add_error {
-	my ($self, $message) = @_;
-	return( push( @{$self->{$KEY_SITE_ERRORS}}, $message ) );
-}
-
-sub add_no_error {
-	push( @{$_[0]->{$KEY_SITE_ERRORS}}, undef );
-}
-
 sub add_filesystem_error {
 	my ($self, $filename, $unique_part) = @_;
-	my $filepath = $self->srp_child_string( $filename );
-	return( $self->add_error( "can't $unique_part file '$filepath': $!" ) );
+	return( $self->add_virtual_filename_error( $unique_part, $filename ) );
 }
 
 ######################################################################
 
 sub site_root_dir {
 	my ($self, $new_value) = @_;
-	return( $self->{$KEY_SRP}->physical_root( $new_value ) );
+	return( $self->file_path_root( $new_value ) );
 }
 
 sub system_path_delimiter {
 	my ($self, $new_value) = @_;
-	return( $self->{$KEY_SRP}->physical_delimiter( $new_value ) );
+	return( $self->file_path_delimiter( $new_value ) );
 }
 
 sub phys_filename_string {
 	my ($self, $chg_vec, $trailer) = @_;
-	return( $self->{$KEY_SRP}->physical_child_path_string( $chg_vec, $trailer ) );
+	return( $self->physical_filename( $chg_vec, $trailer ) );
 }
 
 ######################################################################
 
 sub site_prefs {
-	my $self = shift( @_ );
-	if( defined( my $new_value = shift( @_ ) ) ) {
-		$self->{$KEY_PREFS} = $self->get_prefs_rh( $new_value ) || {};
-	}
-	return( $self->{$KEY_PREFS} );
+	my ($self, $new_value) = @_;
+	$self->set_prefs( $new_value );
+	return( $self->get_prefs_ref() );
 }
 
 sub move_site_prefs {
 	my ($self, $new_value) = @_;
-	push( @{$self->{$KEY_PREFS_STACK}}, $self->{$KEY_PREFS} );
-	$self->{$KEY_PREFS} = $self->get_prefs_rh( $new_value ) || {};
+	push( @{$self->{$KEY_PREFS_STACK}}, $self->get_prefs_ref() );
+	$self->set_prefs( $new_value );
 }
 
 sub restore_site_prefs {
 	my $self = shift( @_ );
-	$self->{$KEY_PREFS} = pop( @{$self->{$KEY_PREFS_STACK}} ) || {};
+	$self->set_prefs( pop( @{$self->{$KEY_PREFS_STACK}} ) || {} );
 }
 
 sub site_pref {
 	my $self = shift( @_ );
 	my $key = shift( @_ );
 
-	if( defined( my $new_value = shift( @_ ) ) ) {
-		$self->{$KEY_PREFS}->{$key} = $new_value;
-	}
-	my $value = $self->{$KEY_PREFS}->{$key};
+	my $value = $self->pref( $key, shift( @_ ) );
 
 	# if current version doesn't define key, look in older versions
 	unless( defined( $value ) ) {
@@ -647,112 +570,109 @@ sub site_pref {
 
 sub site_resource_path {
 	my ($self, $new_value) = @_;
-	return( $self->{$KEY_SRP}->path( $new_value ) );
+	return( $self->file_path( $new_value ) );
 }
 
 sub site_resource_path_string {
 	my ($self, $trailer) = @_;
-	return( $self->{$KEY_SRP}->path_string( $trailer ) );
+	return( $self->file_path_string( $trailer ) );
 }
 	
 sub move_current_srp {
 	my ($self, $chg_vec) = @_;
-	push( @{$self->{$KEY_SRP_STACK}}, $self->{$KEY_SRP} );
-	$self->{$KEY_SRP} = $self->{$KEY_SRP}->child_path_obj( $chg_vec );
+	push( @{$self->{$KEY_SRP_STACK}}, $self->get_file_path_ref() );
+	$self->{'file_path'} = $self->get_file_path_ref()->child_path_obj( $chg_vec );
 }
 
 sub restore_last_srp {
 	my ($self) = @_;
 	if( @{$self->{$KEY_SRP_STACK}} ) {
-		$self->{$KEY_SRP} = pop( @{$self->{$KEY_SRP_STACK}} );
+		$self->{'file_path'} = pop( @{$self->{$KEY_SRP_STACK}} );
 	}
 }
 
 sub srp_child {
 	my ($self, $chg_vec) = @_;
-	return( $self->{$KEY_SRP}->child_path( $chg_vec ) );
+	return( $self->get_file_path_ref()->child_path( $chg_vec ) );
 }
 
 sub srp_child_string {
 	my ($self, $chg_vec, $trailer) = @_;
-	return( $self->{$KEY_SRP}->child_path_string( $chg_vec, $trailer ) );
+	return( $self->virtual_filename( $chg_vec, $trailer ) );
 }
 
 ######################################################################
 
 sub virtual_resource_path {
 	my ($self, $new_value) = @_;
-	return( $self->{$KEY_VRP}->path( $new_value ) );
+	return( $self->url_path( $new_value ) );
 }
 
 sub virtual_resource_path_string {
 	my ($self, $trailer) = @_;
-	return( $self->{$KEY_VRP}->path_string( $trailer ) );
+	return( $self->url_path_string( $trailer ) );
 }
 	
 sub move_current_vrp {
 	my ($self, $chg_vec) = @_;
-	push( @{$self->{$KEY_VRP_STACK}}, $self->{$KEY_VRP} );
-	$self->{$KEY_VRP} = $self->{$KEY_VRP}->child_path_obj( $chg_vec );
+	push( @{$self->{$KEY_VRP_STACK}}, $self->get_url_path_ref() );
+	$self->{'url_path'} = $self->get_url_path_ref()->child_path_obj( $chg_vec );
 }
 
 sub restore_last_vrp {
 	my ($self) = @_;
 	if( @{$self->{$KEY_VRP_STACK}} ) {
-		$self->{$KEY_VRP} = pop( @{$self->{$KEY_VRP_STACK}} );
+		$self->{'url_path'} = pop( @{$self->{$KEY_VRP_STACK}} );
 	}
 }
 
 sub vrp_child {
 	my ($self, $chg_vec) = @_;
-	return( $self->{$KEY_VRP}->child_path( $chg_vec ) );
+	return( $self->get_url_path_ref()->child_path( $chg_vec ) );
 }
 
 sub vrp_child_string {
 	my ($self, $chg_vec, $trailer) = @_;
-	return( $self->{$KEY_VRP}->child_path_string( $chg_vec, $trailer ) );
+	return( $self->child_url_path_string( $chg_vec, $trailer ) );
 }
 
 ######################################################################
 
 sub user_vrp {
 	my ($self, $new_value) = @_;
-	return( $self->{$KEY_USER_VRP}->path( $new_value ) );
+	return( $self->user_path( $new_value ) );
 }
 
 sub user_vrp_string {
 	my ($self, $trailer) = @_;
-	return( $self->{$KEY_USER_VRP}->path_string( $trailer ) );
+	return( $self->user_path_string( $trailer ) );
 }
 
 sub current_user_vrp_level {
 	my ($self, $new_value) = @_;
-	return( $self->{$KEY_USER_VRP}->current_path_level( $new_value ) );
+	return( $self->current_user_path_level( $new_value ) );
 }
 
 sub inc_user_vrp_level {
 	my ($self) = @_;
-	return( $self->{$KEY_USER_VRP}->inc_path_level() );
+	return( $self->inc_user_path_level() );
 }
 
 sub dec_user_vrp_level {
 	my ($self) = @_;
-	return( $self->{$KEY_USER_VRP}->dec_path_level() );
+	return( $self->dec_user_path_level() );
 }
 
 sub current_user_vrp_element {
 	my ($self, $new_value) = @_;
-	return( $self->{$KEY_USER_VRP}->current_path_element( $new_value ) );
+	return( $self->current_user_path_element( $new_value ) );
 }
 
 ######################################################################
 
 sub vrp_param_name {
-	my $self = shift( @_ );
-	if( defined( my $new_value = shift( @_ ) ) ) {
-		$self->{$KEY_VRP_UIPN} = $new_value;
-	}
-	return( $self->{$KEY_VRP_UIPN} );
+	my ($self, $new_value) = @_;
+	return( $self->url_path_query_param_name( $new_value ) );
 }
 
 # This currently supports vrp in query string format only.
@@ -761,13 +681,12 @@ sub vrp_param_name {
 # If 2 arguments provided, returns "[base]?[pers]&path=[vrp_child]/"
 
 sub persistant_vrp_url {
-	my $self = shift( @_ );
-	my $chg_vec = shift( @_ );
-	my $persist_input_str = $self->persistant_user_input_string();
-	return( $self->base_url().'?'.
+	my ($self, $chg_vec, $trailer) = @_;
+	my $persist_input_str = $self->url_query_string();
+	return( $self->url_base().'?'.
 		($persist_input_str ? "$persist_input_str&" : '').
-		$self->{$KEY_VRP_UIPN}.(defined( $chg_vec ) ? 
-		'='.$self->vrp_child_string( $chg_vec, @_ ) : '') );
+		$self->url_path_query_param_name().(defined( $chg_vec ) ? 
+		'='.$self->child_url_path_string( $chg_vec, $trailer ) : '') );
 }
 
 ######################################################################
@@ -831,38 +750,6 @@ sub site_owner_email_html {
 }
 
 ######################################################################
-# Note: in order for this to work, the file must contain valid perl 
-# code that, when compiled, produces a valid HASH reference.
-
-sub get_hash_from_file {
-	my ($self, $filename) = @_;
-	my $result = do $filename;
-	return( (ref( $result ) eq 'HASH') ? $result : undef );
-}
-
-######################################################################
-
-sub get_prefs_rh {
-	my ($self, $site_prefs) = @_;
-
-	if( ref( $site_prefs ) eq 'HASH' ) {
-		$site_prefs = {%{$site_prefs}};
-
-	} else {
-		$self->add_no_error();
-		$site_prefs = $self->get_hash_from_file( 
-				$self->phys_filename_string( $site_prefs ) ) or do {
-			my $filename = $self->srp_child_string( $site_prefs );
-			$self->add_error( <<__endquote );
-can't obtain required site preferences hash from file "$filename": $!
-__endquote
-		};
-
-	}
-	return( $site_prefs );
-}
-
-######################################################################
 
 sub is_mod_perl {
 	return( $ENV{'GATEWAY_INTERFACE'} =~ /^CGI-Perl/ );
@@ -890,6 +777,12 @@ sub script_name {
 	$str =~ s/%([0-9a-fA-F]{2})/pack("c",hex($1))/ge;
 	return( $str );
 }
+sub path_info {
+	my $str = $ENV{'PATH_INFO'};
+	$str =~ tr/+/ /;
+	$str =~ s/%([0-9a-fA-F]{2})/pack("c",hex($1))/ge;
+	return( $str );
+}
 
 sub http_referer {
 	my $str = $ENV{'HTTP_REFERER'};
@@ -906,6 +799,7 @@ sub remote_user { $ENV{'AUTH_USER'} || $ENV{'LOGON_USER'} ||
 sub user_agent { $ENV{'HTTP_USER_AGENT'} }
 
 ######################################################################
+# fed to url_base()
 
 sub base_url {
 	my $self = shift( @_ );
@@ -916,15 +810,17 @@ sub base_url {
 }
 
 ######################################################################
+# like recall_url()
 
 sub self_url {
 	my $self = shift( @_ );
 	my $query = $self->user_query_str() || 
 		$self->user_offline_str();
-	return( $self->base_url().($query ? "?$query" : '') );
+	return( $self->base_url().$self->path_info().($query ? "?$query" : '') );
 }
 
 ######################################################################
+# like recall_button()
 
 sub self_post {
 	my $self = shift( @_ );
@@ -941,6 +837,7 @@ __endquote
 }
 
 ######################################################################
+# like recall_html() with recall_hyperlink() inlined
 
 sub self_html {
 	my $self = shift( @_ );
@@ -953,92 +850,77 @@ sub self_html {
 ######################################################################
 
 sub user_cookie {
-	my $self = shift( @_ );
-	if( ref( my $new_value = shift( @_ ) ) eq 'CGI::MultiValuedHash' ) {
-		$self->{$KEY_USER_COOKIE} = $new_value->clone();
-	}
-	return( $self->{$KEY_USER_COOKIE} );
+	my ($self, $new_value) = @_;
+	$self->SUPER::user_cookies( $new_value );
+	return( $self->get_user_cookies_ref() );
 }
 
 sub user_cookie_string {
 	my $self = shift( @_ );
-	return( $self->{$KEY_USER_COOKIE}->to_url_encoded_string('; ','&') );
+	return( $self->SUPER::user_cookies_string() );
 }
 
 sub user_cookie_param {
 	my $self = shift( @_ );
-	my $key = shift( @_ );
-	if( @_ ) {
-		return( $self->{$KEY_USER_COOKIE}->store( $key, @_ ) );
-	} elsif( wantarray ) {
-		return( @{$self->{$KEY_USER_COOKIE}->fetch( $key ) || []} );
-	} else {
-		return( $self->{$KEY_USER_COOKIE}->fetch_value( $key ) );
-	}
+	return( $self->SUPER::user_cookie( @_ ) );
 }
 
 ######################################################################
 
 sub user_input {
-	my $self = shift( @_ );
-	if( ref( my $new_value = shift( @_ ) ) eq 'CGI::MultiValuedHash' ) {
-		$self->{$KEY_USER_INPUT} = $new_value->clone();
-	}
-	return( $self->{$KEY_USER_INPUT} );
+	my ($self, $new_value) = @_;
+	$self->user_query( $new_value );
+	return( $self->get_user_query_ref() );
 }
 
 sub user_input_string {
 	my $self = shift( @_ );
-	return( $self->{$KEY_USER_INPUT}->to_url_encoded_string() );
+	return( $self->user_query_string() );
 }
 
 sub user_input_param {
 	my $self = shift( @_ );
-	my $key = shift( @_ );
-	if( @_ ) {
-		return( $self->{$KEY_USER_INPUT}->store( $key, @_ ) );
-	} elsif( wantarray ) {
-		return( @{$self->{$KEY_USER_INPUT}->fetch( $key ) || []} );
-	} else {
-		return( $self->{$KEY_USER_INPUT}->fetch_value( $key ) );
-	}
+	return( $self->user_query_param( @_ ) );
 }
 
 sub user_input_keywords {
 	my $self = shift( @_ );
-	return( @{$self->{$KEY_USER_INPUT}->fetch( $UIP_KEYWORDS )} );
+	return( $self->user_query_param( $UIP_KEYWORDS ) );
 }
 
 ######################################################################
 
 sub persistant_user_input_params {
-	my $self = shift( @_ );
-	if( ref( my $new_value = shift( @_ ) ) eq 'HASH' ) {
-		$self->{$KEY_PERSIST_QUERY} = {%{$new_value}};
+	my ($self, $new_value) = @_;
+	if( ref( $new_value ) eq 'HASH' ) {
+		foreach my $key (keys %{$new_value}) {
+			$self->persistant_user_input_param( $key, $new_value->{$key} );
+		}
 	}
-	return( $self->{$KEY_PERSIST_QUERY} );
+	return( { map { ($_ => 1) } $self->get_url_query_ref()->keys() } );
 }
 
 sub persistant_user_input_string {
-	my $self = shift( @_ );
-	return( $self->{$KEY_USER_INPUT}->fetch_mvh( 
-		[keys %{$self->{$KEY_PERSIST_QUERY}}] 
-		)->to_url_encoded_string() );
+	return( $_[0]->url_query_string() );
 }
 
 sub persistant_user_input_param {
-	my $self = shift( @_ );
-	my $key = shift( @_ );
-	if( defined( my $new_value = shift( @_ ) ) ) {
-		$self->{$KEY_PERSIST_QUERY}->{$key} = $new_value;
-	}	
-	return( $self->{$KEY_PERSIST_QUERY}->{$key} );
+	my ($self, $key, $new_value) = @_;
+	my $url_query = $self->get_url_query_ref();
+	if( defined( $new_value ) ) {
+		if( $new_value ) {
+			$url_query->store( $key, $self->user_query_param( $key ) );
+		} else {
+			$url_query->delete( $key );
+		}
+	}
+	return( $url_query->exists( $key ) );
 }
 
 sub persistant_url {
 	my $self = shift( @_ );
-	my $persist_input_str = $self->persistant_user_input_string();
-	return( $self->base_url().
+	my $persist_input_str = $self->url_query_string();
+	return( $self->url_base().
 		($persist_input_str ? "?$persist_input_str" : '') );
 }
 
@@ -1057,10 +939,7 @@ instead of an ordinary web page.
 
 sub redirect_url {
 	my $self = shift( @_ );
-	if( defined( my $new_value = shift( @_ ) ) ) {
-		$self->{$KEY_REDIRECT_URL} = $new_value;
-	}
-	return( $self->{$KEY_REDIRECT_URL} );
+	return( $self->http_redirect_url( @_ ) );
 }
 
 ######################################################################
@@ -1071,7 +950,7 @@ sub get_http_headers {
 	require HTTP::Headers;
 	my $http = HTTP::Headers->new();
 
-	if( my $url = $self->{$KEY_REDIRECT_URL} ) {
+	if( my $url = $self->http_redirect_url() ) {
 		$http->header( 
 			status => '301 Moved',  # used to be "302 Found"
 			uri => $url,
@@ -1195,11 +1074,8 @@ list; otherwise, all the arguments are taken as elements in a list.
 
 sub body_content {
 	my $self = shift( @_ );
-	if( defined( $_[0] ) ) {
-		$self->{$KEY_MAIN_BODY} = 
-			(ref( $_[0] ) eq 'ARRAY') ? [@{$_[0]}] : [@_];
-	}
-	return( $self->{$KEY_MAIN_BODY} );  # returns ref
+	$self->set_page_body( @_ );
+	return( $self->get_page_body_ref() );  # returns ref
 }
 
 ######################################################################
@@ -1219,11 +1095,8 @@ list; otherwise, all the arguments are taken as elements in a list.
 
 sub head_content {
 	my $self = shift( @_ );
-	if( defined( $_[0] ) ) {
-		$self->{$KEY_MAIN_HEAD} = 
-			(ref( $_[0] ) eq 'ARRAY') ? [@{$_[0]}] : [@_];
-	}
-	return( $self->{$KEY_MAIN_HEAD} );  # returns ref
+	$self->set_page_head( @_ );
+	return( $self->get_page_head_ref() );  # returns ref
 }
 
 ######################################################################
@@ -1241,10 +1114,7 @@ between a <TITLE></TITLE> tag pair.
 
 sub title {
 	my $self = shift( @_ );
-	if( defined( my $new_value = shift( @_ ) ) ) {
-		$self->{$KEY_TITLE} = $new_value;
-	}
-	return( $self->{$KEY_TITLE} );  # ret copy
+	return( $self->page_title( @_ ) );  # ret copy
 }
 
 ######################################################################
@@ -1262,10 +1132,7 @@ used in a new '<LINK REV="made">' tag if defined.
 
 sub author {
 	my $self = shift( @_ );
-	if( defined( my $new_value = shift( @_ ) ) ) {
-		$self->{$KEY_AUTHOR} = $new_value;
-	}
-	return( $self->{$KEY_AUTHOR} );  # ret copy
+	return( $self->page_author( @_ ) );  # ret copy
 }
 
 ######################################################################
@@ -1288,15 +1155,11 @@ VALUE="v">' tag would be made for each key/value pair.
 
 sub meta {
 	my $self = shift( @_ );
-	if( ref( my $first = shift( @_ ) ) eq 'HASH' ) {
-		$self->{$KEY_META} = {%{$first}};
-	} elsif( defined( $first ) ) {
-		if( defined( my $second = shift( @_ ) ) ) {
-			$self->{$KEY_META}->{$first} = $second;
-		}
-		return( $self->{$KEY_META}->{$first} );
+	$self->set_page_meta( @_ );
+	if( defined( $_[0] ) and ref( $_[0] ) ne 'HASH' ) {
+		return( $self->get_page_meta( $_[0] ) );  # returns value for one key
 	}
-	return( $self->{$KEY_META} );  # returns ref
+	return( $self->get_page_meta_ref() );  # returns ref
 }
 
 ######################################################################
@@ -1319,11 +1182,8 @@ REL="stylesheet" SRC="url">' tag would be made for each list element.
 
 sub style_sources {
 	my $self = shift( @_ );
-	if( defined( $_[0] ) ) {
-		$self->{$KEY_CSS_SRC} = 
-			(ref( $_[0] ) eq 'ARRAY') ? [@{$_[0]}] : [@_];
-	}
-	return( $self->{$KEY_CSS_SRC} );  # returns ref
+	$self->set_page_style_sources( @_ );
+	$self->get_page_style_sources_ref();  # returns ref
 }
 
 ######################################################################
@@ -1346,11 +1206,8 @@ multi-line tag is made for them.
 
 sub style_code {
 	my $self = shift( @_ );
-	if( defined( $_[0] ) ) {
-		$self->{$KEY_CSS_CODE} = 
-			(ref( $_[0] ) eq 'ARRAY') ? [@{$_[0]}] : [@_];
-	}
-	return( $self->{$KEY_CSS_CODE} );  # returns ref
+	$self->set_page_style_code( @_ );
+	$self->get_page_style_code_ref();  # returns ref
 }
 
 ######################################################################
@@ -1373,15 +1230,11 @@ the attribute keys and values go inside the opening <BODY> tag of a new document
 
 sub body_attributes {
 	my $self = shift( @_ );
-	if( ref( my $first = shift( @_ ) ) eq 'HASH' ) {
-		$self->{$KEY_BODY_ATTR} = {%{$first}};
-	} elsif( defined( $first ) ) {
-		if( defined( my $second = shift( @_ ) ) ) {
-			$self->{$KEY_BODY_ATTR}->{$first} = $second;
-		}
-		return( $self->{$KEY_BODY_ATTR}->{$first} );
+	$self->set_page_body_attributes( @_ );
+	if( defined( $_[0] ) and ref( $_[0] ) ne 'HASH' ) {
+		return( $self->get_page_body_attributes( $_[0] ) );  # ret val for a key
 	}
-	return( $self->{$KEY_BODY_ATTR} );  # returns ref
+	return( $self->get_page_body_attributes_ref() );  # returns ref
 }
 
 ######################################################################
@@ -1428,9 +1281,8 @@ object, and that entire property is returned.
 
 sub body_append {
 	my $self = shift( @_ );
-	my $ra_values = (ref( $_[0] ) eq 'ARRAY') ? shift( @_ ) : \@_;
-	push( @{$self->{$KEY_MAIN_BODY}}, @{$ra_values} );
-	return( $self->{$KEY_MAIN_BODY} );  # returns ref
+	$self->append_page_body( @_ );
+	return( $self->get_page_body_ref() );  # returns ref
 }
 
 ######################################################################
@@ -1446,9 +1298,8 @@ object, and that entire property is returned.
 
 sub body_prepend {
 	my $self = shift( @_ );
-	my $ra_values = (ref( $_[0] ) eq 'ARRAY') ? shift( @_ ) : \@_;
-	unshift( @{$self->{$KEY_MAIN_BODY}}, @{$ra_values} );
-	return( $self->{$KEY_MAIN_BODY} );  # returns ref
+	$self->prepend_page_body( @_ );
+	return( $self->get_page_body_ref() );  # returns ref
 }
 
 ######################################################################
@@ -1464,9 +1315,8 @@ object, and that entire property is returned.
 
 sub head_append {
 	my $self = shift( @_ );
-	my $ra_values = (ref( $_[0] ) eq 'ARRAY') ? shift( @_ ) : \@_;
-	push( @{$self->{$KEY_MAIN_HEAD}}, @{$ra_values} );
-	return( $self->{$KEY_MAIN_HEAD} );  # returns ref
+	$self->append_page_head( @_ );
+	return( $self->get_page_head_ref() );  # returns ref
 }
 
 ######################################################################
@@ -1482,9 +1332,8 @@ object, and that entire property is returned.
 
 sub head_prepend {
 	my $self = shift( @_ );
-	my $ra_values = (ref( $_[0] ) eq 'ARRAY') ? shift( @_ ) : \@_;
-	unshift( @{$self->{$KEY_MAIN_HEAD}}, @{$ra_values} );
-	return( $self->{$KEY_MAIN_HEAD} );  # returns ref
+	$self->prepend_page_head( @_ );
+	return( $self->get_page_head_ref() );  # returns ref
 }
 
 ######################################################################
@@ -1539,14 +1388,14 @@ called by to_string() prior to the latter assembling a web page.
 
 sub do_replacements {
 	my $self = shift( @_ );
-	my $body = join( '', @{$self->{$KEY_MAIN_BODY}} );
+	my $body = $self->get_page_body();
 	foreach my $rh_pairs (@{$self->{$KEY_REPLACE}}) {
 		foreach my $find_val (keys %{$rh_pairs}) {
 			my $replace_val = $rh_pairs->{$find_val};
 			$body =~ s/$find_val/$replace_val/g;
 		}
 	}
-	$self->{$KEY_MAIN_BODY} = [$body];
+	$self->set_page_body( $body );
 }
 
 ######################################################################
@@ -1568,33 +1417,7 @@ sub content_as_string {
 
 	$self->do_replacements();
 
-	require HTML::EasyTags;
-	my $html = HTML::EasyTags->new();
-
-	my ($title,$author,$meta,$css_src,$css_code);
-
-	$self->{$KEY_AUTHOR} and $author = 
-		$html->link( rev => 'made', href => "mailto:$self->{$KEY_AUTHOR}" );
-
-	%{$self->{$KEY_META}} and $meta = join( '', map { 
-		$html->meta_group( name => $_, value => $self->{$KEY_META}->{$_} ) 
-		} keys %{$self->{$KEY_META}} );
-
-	@{$self->{$KEY_CSS_SRC}} and $css_src = $html->link_group( 
-		rel => 'stylesheet', type => 'text/css', href => $self->{$KEY_CSS_SRC} );
-
-	@{$self->{$KEY_CSS_CODE}} and $css_code = 
-		$html->style( $html->comment_tag( $self->{$KEY_CSS_CODE} ) );
-
-	return( join( '', 
-		$html->start_html(
-			$self->{$KEY_TITLE},
-			[ $author, $meta, $css_src, $css_code, @{$self->{$KEY_MAIN_HEAD}} ], 
-			$self->{$KEY_BODY_ATTR}, 
-		), 
-		@{$self->{$KEY_MAIN_BODY}},
-		$html->end_html(),
-	) );
+	return( $self->page_as_string() );
 }
 
 ######################################################################
@@ -1619,7 +1442,6 @@ Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>.
 
 =head1 SEE ALSO
 
-perl(1), mod_perl, CGI::WPM::Base, CGI::MultiValuedHash, HTML::EasyTags, 
-HTTP::Headers, Apache.
+perl(1), mod_perl, HTML::Application, CGI::WPM::Base, HTTP::Headers, Apache.
 
 =cut
