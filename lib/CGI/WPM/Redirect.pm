@@ -1,7 +1,6 @@
 =head1 NAME
 
-CGI::WPM::Redirect - Perl module that is a subclass of CGI::WPM::Base and issues 
-an HTTP redirection header.
+CGI::WPM::Redirect - Demo of HTML::Application sending a redirection header.
 
 =cut
 
@@ -18,7 +17,7 @@ require 5.004;
 
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = '0.34';
+$VERSION = '0.4';
 
 ######################################################################
 
@@ -34,14 +33,15 @@ $VERSION = '0.34';
 
 =head2 Nonstandard Modules
 
-	CGI::WPM::Base 0.34
-	CGI::WPM::Globals 0.34
+	HTML::Application 0.4
+	CGI::WPM::Base 0.4
 
 =cut
 
 ######################################################################
 
-use CGI::WPM::Base 0.34;
+use HTML::Application 0.4;
+use CGI::WPM::Base 0.4;
 @ISA = qw(CGI::WPM::Base);
 
 ######################################################################
@@ -50,29 +50,22 @@ use CGI::WPM::Base 0.34;
 
 =head2 Redirect To A Custom Url
 
-	require CGI::WPM::Globals;
-	my $globals = CGI::WPM::Globals->new();
-	
-	require CGI::WPM::Redirect;
-	$globals->move_site_prefs( {} );  # looks at query parameter "url"
-	CGI::WPM::Redirect->execute( $globals );
-	
-	$globals->send_to_user();  # sends a 301 Moved header
+	my %CONFIG = ();
 
 =head2 Always Redirect To Same Url
 
-	$globals->move_site_prefs( {url => 'http://www.samplesitenew.net'} );
+	my %CONFIG = ( url => 'http://www.samplesitenew.net' );
 
 =head1 DESCRIPTION
 
-I<This POD is coming when I get the time to write it.>
-
-This module sets the redirect_url() property of the WebUserIO object that 
-Globals inherits from, and the latter does the actual work; you could do this 
-directly if you wished.  This Redirect module will spit out an ordinary HTML 
-page if it doesn't know what url to forward to.  It is intended to be used in 
-larger web sites that want to track outgoing visitors with the same program 
-that makes the site's pages.
+This Perl 5 object class is part of a demonstration of HTML::Application in use.  
+It is one of a set of "application components" that takes its settings and user 
+input through HTML::Application and uses that class to send its user output.  
+This demo module set can be used together to implement a web site complete with 
+static html pages, e-mail forms, guest books, segmented text document display, 
+usage tracking, and url-forwarding.  Of course, true to the intent of 
+HTML::Application, each of the modules in this demo set can be used independantly 
+of the others.
 
 =head1 SYNTAX
 
@@ -83,8 +76,13 @@ your own modules, then that often means something like B<$self-E<gt>method()>.
 
 =head1 PUBLIC FUNCTIONS AND METHODS
 
-This module inherits its entire public interface from CGI::WPM::Base.  Please see 
-the POD for that module so you know how to call this one.
+=head2 main( GLOBALS )
+
+You invoke this method to run the application component that is encapsulated by 
+this class.  The required argument GLOBALS is an HTML::Application object that 
+you have previously configured to hold the instance settings and user input for 
+this class.  When this method returns then the encapsulated application will 
+have finished and you can get its user output from the HTML::Application object.
 
 =head1 PREFERENCES HANDLED BY THIS MODULE
 
@@ -106,19 +104,19 @@ my $PKEY_EXPL_DEST_URL = 'url';  # our preferences may tell us where
 my $UIPN_DEST_URL = 'url';  # or look in the user input instead
 
 ######################################################################
-# This is provided so CGI::WPM::Base->dispatch_by_user() can call it.
+# This is provided so CGI::WPM::Base->main() can call it.
 
-sub _dispatch_by_user {
+sub main_dispatch {
 	my $self = shift( @_ );
 	my $globals = $self->{$KEY_SITE_GLOBALS};
-	my $dest_url = $globals->site_pref( $PKEY_EXPL_DEST_URL ) || 
-		$globals->user_input_param( $UIPN_DEST_URL );
+	my $dest_url = $globals->pref( $PKEY_EXPL_DEST_URL ) || 
+		$globals->user_query_param( $UIPN_DEST_URL );
 	
 	unless( $dest_url ) {
-		$globals->title( 'No Url Provided' );
+		$globals->page_title( 'No Url Provided' );
 
-		$globals->body_content( <<__endquote );
-<H2 ALIGN="center">@{[$globals->title()]}</H2>
+		$globals->set_page_body( <<__endquote );
+<H2 ALIGN="center">@{[$globals->page_title()]}</H2>
 
 <P>I'm sorry, but this redirection page requires either a site 
 preference named "$PKEY_EXPL_DEST_URL", or a query parameter named 
@@ -133,7 +131,8 @@ __endquote
 		return( 1 );
 	}
 
-	$globals->redirect_url( $dest_url );
+	$globals->http_status_code( '301 Moved' );
+	$globals->http_redirect_url( $dest_url );
 }
 
 ######################################################################
@@ -158,6 +157,6 @@ Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>.
 
 =head1 SEE ALSO
 
-perl(1), CGI::WPM::Base, CGI::WPM::Globals, CGI::WPM::WebUserIO.
+perl(1), HTML::Application, CGI::WPM::Base.
 
 =cut

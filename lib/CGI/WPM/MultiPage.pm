@@ -1,9 +1,9 @@
 =head1 NAME
 
-CGI::WPM::MultiPage - Perl module that is a subclass of CGI::WPM::Base and
-resolves navigation for one level in the web site page hierarchy from a parent
-node to its children, encapsulates and returns its childrens' returned web page
-components, and can make a navigation bar to child pages.
+CGI::WPM::MultiPage - Demo of HTML::Application that resolves navigation for one 
+level in the web site page hierarchy from a parent node to its children, 
+encapsulates and returns its childrens' returned web page components, and can 
+make a navigation bar to child pages.
 
 =cut
 
@@ -20,7 +20,7 @@ require 5.004;
 
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = '0.34';
+$VERSION = '0.4';
 
 ######################################################################
 
@@ -36,62 +36,32 @@ $VERSION = '0.34';
 
 =head2 Nonstandard Modules
 
-	CGI::WPM::Base 0.34
-	CGI::WPM::Globals 0.34
+	HTML::Application 0.4
+	CGI::WPM::Base 0.4
 
 =cut
 
 ######################################################################
 
-use CGI::WPM::Base 0.34;
+use HTML::Application 0.4;
+use CGI::WPM::Base 0.4;
 @ISA = qw(CGI::WPM::Base);
 
 ######################################################################
 
 =head1 SYNOPSIS
 
-	require CGI::WPM::Globals;  # to hold our input, output, preferences
-	my $globals = CGI::WPM::Globals->new( "/path/to/site/files" );  # get input
-
-	$globals->user_vrp( lc( $globals->user_input_param(  # fetch extra path info...
-		$globals->vrp_param_name( 'path' ) ) ) );  # to know what page user wants
-	$globals->current_user_vrp_level( 1 );  # get ready to examine start of vrp
-	
-	$globals->site_title( 'Sample Web Site' );  # use this in e-mail subjects
-	$globals->site_owner_name( 'Darren Duncan' );  # send messages to him
-	$globals->site_owner_email( 'darren@sampleweb.net' );  # send messages here
-	$globals->site_owner_email_vrp( '/mailme' );  # site page email form is on
-
-	require CGI::WPM::MultiPage;  # all content is made through here
-	$globals->move_current_srp( 'content' );  # subdir holding content files
-	$globals->move_site_prefs( 'content_prefs.pl' );  # configuration file
-	CGI::WPM::MultiPage->execute( $globals );  # do all the work
-	$globals->restore_site_prefs();  # rewind configuration context
-	$globals->restore_last_srp();  # rewind subdir context
-
-	$globals->add_later_replace( {  # do some token substitutions
-		__mailme_url__ => "__vrp_id__=/mailme",
-		__external_id__ => "__vrp_id__=/external&url",
-	} );
-
-	$globals->add_later_replace( {  # more token substitutions in static pages
-		__vrp_id__ => $globals->persistant_vrp_url(),
-	} );
-
-	$globals->send_to_user();  # send output page now that everything's ready
-
-=head2 The Configuration File "content_prefs.pl"
+=head2 An example configuration file for a multiple-page website
 
 	my $rh_preferences = { 
 		page_header => <<__endquote,
 	__endquote
 		page_footer => <<__endquote,
 	<P><EM>Sample Web Site was created and is maintained for personal use by 
-	<A HREF="__mailme_url__">Darren Duncan</A>.  All content and source code was 
+	Darren Duncan.  All content and source code was 
 	created by me, unless otherwise stated.  Content that I did not create is 
 	used with permission from the creators, who are appropriately credited where 
-	it is used and in the <A HREF="__vrp_id__=/cited">Works Cited</A> section of 
-	this site.</EM></P>
+	it is used and in the Works Cited section of this site.</EM></P>
 	__endquote
 		page_css_code => [
 			'BODY {background-color: white; background-image: none}'
@@ -209,22 +179,14 @@ use CGI::WPM::Base 0.34;
 
 =head1 DESCRIPTION
 
-I<This POD is coming when I get the time to write it.>
-
-Generated page menus are entirely optional, so if you don't like the format 
-you can roll your own.  Due to advances in release 0.3, you can nest as many 
-levels of MultiPage as you wish, and they will work as you expect.  Each 
-"child" of MultiPage is called in the same means as if that page were the only 
-one in the whole program; each has its own handler WPM module, its own config 
-data, and optionally its own srp subdirectory.  
-
-Subdirectories are all relative, so having '' means the current directory, 
-'something' is a level down, '..' is a level up, '../another' is a level 
-sideways, 'one/more/time' is 3 levels down.  However, any relative subdir 
-beginning with '/' becomes absolute, where '/' corresponds to the site file 
-root.  You can not go to parents of the site root.  Those are physical 
-directories (site resource path), and the uri does not reflect them.  The uri 
-does, however, reflect uri changes (virtual resource path).  
+This Perl 5 object class is part of a demonstration of HTML::Application in use.  
+It is one of a set of "application components" that takes its settings and user 
+input through HTML::Application and uses that class to send its user output.  
+This demo module set can be used together to implement a web site complete with 
+static html pages, e-mail forms, guest books, segmented text document display, 
+usage tracking, and url-forwarding.  Of course, true to the intent of 
+HTML::Application, each of the modules in this demo set can be used independantly 
+of the others.
 
 =head1 SYNTAX
 
@@ -235,8 +197,13 @@ your own modules, then that often means something like B<$self-E<gt>method()>.
 
 =head1 PUBLIC FUNCTIONS AND METHODS
 
-This module inherits its entire public interface from CGI::WPM::Base.  Please see 
-the POD for that module so you know how to call this one.
+=head2 main( GLOBALS )
+
+You invoke this method to run the application component that is encapsulated by 
+this class.  The required argument GLOBALS is an HTML::Application object that 
+you have previously configured to hold the instance settings and user input for 
+this class.  When this method returns then the encapsulated application will 
+have finished and you can get its user output from the HTML::Application object.
 
 =head1 PREFERENCES HANDLED BY THIS MODULE
 
@@ -296,19 +263,19 @@ my $MKEY_IS_ACTIVE = 'is_active';  # is menu item enabled or not?
 # Constant values used in this class go here:
 
 ######################################################################
-# This is provided so CGI::WPM::Base->dispatch_by_user() can call it.
+# This is provided so CGI::WPM::Base->main() can call it.
 
-sub _dispatch_by_user {
+sub main_dispatch {
 	my $self = shift( @_ );
 
 	$self->get_inner_wpm_content();  # puts in webpage of $globals
 
 	my $globals = $self->{$KEY_SITE_GLOBALS};
-	my $rh_prefs = $globals->site_prefs();
+	my $rh_prefs = $globals->get_prefs_ref();
 
 	if( $rh_prefs->{$PKEY_PAGE_SHOWDIV} ) {
-		$globals->body_prepend( "\n<HR>\n" );
-		$globals->body_append( "\n<HR>\n" );
+		$globals->prepend_page_body( "\n<HR>\n" );
+		$globals->append_page_body( "\n<HR>\n" );
 	}
 
 	if( ref( $rh_prefs->{$PKEY_MENU_ITEMS} ) eq 'ARRAY' ) {
@@ -321,20 +288,20 @@ sub _dispatch_by_user {
 sub get_inner_wpm_content {
 	my $self = shift( @_ );
 	my $globals = $self->{$KEY_SITE_GLOBALS};
-	my $rh_prefs = $globals->site_prefs();
+	my $rh_prefs = $globals->get_prefs_ref();
 
-	my $page_id = $globals->current_user_vrp_element();
+	my $page_id = $globals->current_user_path_element();
 	$page_id ||= $rh_prefs->{$PKEY_DEF_HANDLER};
 	my $vrp_handler = $rh_prefs->{$PKEY_VRP_HANDLERS}->{$page_id};
 	
 	unless( ref( $vrp_handler ) eq 'HASH' ) {
-		$globals->title( '404 Page Not Found' );
+		$globals->page_title( '404 Page Not Found' );
 
-		$globals->body_content( <<__endquote );
-<H2 ALIGN="center">@{[$globals->title()]}</H2>
+		$globals->set_page_body( <<__endquote );
+<H2 ALIGN="center">@{[$globals->page_title()]}</H2>
 
 <P>I'm sorry, but the page you requested, 
-"@{[$globals->user_vrp_string()]}", doesn't seem to exist.  
+"@{[$globals->user_path_string()]}", doesn't seem to exist.  
 If you manually typed that address into the browser, then it is either 
 outdated or you misspelled it.  If you got this error while clicking 
 on one of the links on this website, then the problem is likely 
@@ -346,41 +313,22 @@ __endquote
 		return( 1 );
 	}
 	
+	my $wpm_context = $globals->make_new_context();
+	$wpm_context->inc_user_path_level();
+	$wpm_context->navigate_url_path( $page_id );
+	$wpm_context->navigate_file_path( $vrp_handler->{$HKEY_WPM_SUBDIR} );
+	$wpm_context->set_prefs( $vrp_handler->{$HKEY_WPM_PREFS} );
+
 	my $wpm_mod_name = $vrp_handler->{$HKEY_WPM_MODULE};
+	$wpm_context->call_component( $wpm_mod_name, 1 );
 
-	$globals->inc_user_vrp_level();
-	$globals->move_current_vrp( $page_id );
-	$globals->move_current_srp( $vrp_handler->{$HKEY_WPM_SUBDIR} );
-	$globals->move_site_prefs( $vrp_handler->{$HKEY_WPM_PREFS} );
-
-	eval {
-		# "require $wpm_mod_name;" yields can't find module in @INC error
-		eval "require $wpm_mod_name;"; if( $@ ) { die $@; }
-
-		unless( $wpm_mod_name->isa( 'CGI::WPM::Base' ) ) {
-			die "Error: $wpm_mod_name isn't a subclass of ".
-				"CGI::WPM::Base, so I don't know how to use it\n";
-		}
-
-		my $wpm = $wpm_mod_name->new( $globals );
-
-		$wpm->dispatch_by_user();
-
-		$wpm->finalize();
-	};
-
-	$globals->restore_site_prefs();
-	$globals->restore_last_srp();
-	$globals->restore_last_vrp();
-	$globals->dec_user_vrp_level();
-
-	if( $@ ) {
-		$globals->add_error( "can't use module '$wpm_mod_name': $@\n" );
+	if( my $msg = $wpm_context->get_error() ) {
+		$globals->add_error( $msg );
 	
-		$globals->title( 'Error Getting Page' );
+		$globals->page_title( 'Error Getting Page' );
 
-		$globals->body_content( <<__endquote );
-<H2 ALIGN="center">@{[$globals->title()]}</H2>
+		$globals->set_page_body( <<__endquote );
+<H2 ALIGN="center">@{[$globals->page_title()]}</H2>
 
 <P>I'm sorry, but an error occurred while getting the requested
 page.  We were unable to use the module that was supposed to 
@@ -388,8 +336,13 @@ generate the page content, named "$wpm_mod_name".</P>
 
 @{[$self->_get_amendment_message()]}
 
-<P>$@</P>
+<P>$msg</P>
 __endquote
+
+		$globals->add_no_error();
+	
+	} else {
+		$globals->take_context_output( $wpm_context );
 	}
 }
 
@@ -401,8 +354,8 @@ sub attach_page_menu {
 	
 	my $menu_table = $self->make_page_menu_table();
 
-	$globals->body_prepend( [$menu_table] );
-	$globals->body_append( [$menu_table] );
+	$globals->prepend_page_body( [$menu_table] );
+	$globals->append_page_body( [$menu_table] );
 }
 
 ######################################################################
@@ -410,7 +363,7 @@ sub attach_page_menu {
 sub make_menu_items_html {
 	my $self = shift( @_ );
 	my $globals = $self->{$KEY_SITE_GLOBALS};	
-	my $rh_prefs = $globals->site_prefs();
+	my $rh_prefs = $globals->get_prefs_ref();
 	my $ra_menu_items = $rh_prefs->{$PKEY_MENU_ITEMS};
 	my @menu_html = ();
 	
@@ -426,7 +379,7 @@ sub make_menu_items_html {
 			next;
 		}
 		
-		my $url = $globals->persistant_vrp_url( 
+		my $url = $globals->url_as_string( 
 			$rh_curr_page->{$MKEY_MENU_PATH} );
 		push( @menu_html, "<A HREF=\"$url\"".
 			">$rh_curr_page->{$MKEY_MENU_NAME}</A>" );
@@ -471,7 +424,7 @@ sub make_page_menu_horiz {
 
 sub make_page_menu_table {
 	my $self = shift( @_ );
-	my $rh_prefs = $self->{$KEY_SITE_GLOBALS}->site_prefs();
+	my $rh_prefs = $self->{$KEY_SITE_GLOBALS}->get_prefs_ref();
 	my @menu_items = $self->make_menu_items_html();
 	
 	my $length = scalar( @menu_items );
@@ -534,6 +487,6 @@ Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>.
 
 =head1 SEE ALSO
 
-perl(1), CGI::WPM::Base, CGI::WPM::Globals.
+perl(1), HTML::Application, CGI::WPM::Base.
 
 =cut

@@ -1,13 +1,13 @@
 =head1 NAME
 
-CGI::WPM::MailForm - Perl module that is a subclass of CGI::WPM::Base and
-implements an e-mail submission form with unlimited questions.
+CGI::WPM::GuestBook - Demo of HTML::Application that implements a complete guest 
+book with unlimited questions that also e-mails submissions to the website owner.
 
 =cut
 
 ######################################################################
 
-package CGI::WPM::MailForm;
+package CGI::WPM::GuestBook;
 require 5.004;
 
 # Copyright (c) 1999-2001, Darren R. Duncan. All rights reserved. This module is
@@ -18,7 +18,7 @@ require 5.004;
 
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = '0.36';
+$VERSION = '0.4';
 
 ######################################################################
 
@@ -36,10 +36,10 @@ $VERSION = '0.36';
 
 =head2 Nonstandard Modules
 
-	CGI::WPM::Globals 0.35
-	CGI::WPM::Base 0.34
-	CGI::MultiValuedHash 1.06
-	HTML::FormTemplate 1.05
+	HTML::Application 0.4
+	CGI::WPM::Base 0.4
+	CGI::MultiValuedHash 1.07
+	HTML::FormTemplate 2.0
 
 =cut
 
@@ -47,45 +47,46 @@ $VERSION = '0.36';
 
 use Fcntl qw(:DEFAULT :flock);
 use Symbol;
-use CGI::WPM::Globals 0.35;
-use CGI::WPM::Base 0.34;
+use HTML::Application 0.4;
+use CGI::WPM::Base 0.4;
 @ISA = qw(CGI::WPM::Base);
-use CGI::MultiValuedHash 1.06;
-use HTML::FormTemplate 1.05;
+use CGI::MultiValuedHash 1.07;
+use HTML::FormTemplate 2.0;
 
 ######################################################################
 
 =head1 SYNOPSIS
 
-=head2 Shortest Complete MailForm Program -- Uses Default Question
+=head2 Use Default Question
 
-	my %CONFIG = ();
-
-	require CGI::WPM::Globals;
-	my $globals = CGI::WPM::Globals->new();
-	
-	$globals->site_title( 'Sample Web Site' );  # use this in e-mail subjects
-	$globals->site_owner_name( 'Darren Duncan' );  # send messages to him
-	$globals->site_owner_email( 'darren@sampleweb.net' );  # send messages here
-
-	require CGI::WPM::MailForm;
-	$globals->move_site_prefs( \%CONFIG );
-	CGI::WPM::MailForm->execute( $globals );
-
-	$globals->send_to_user();
+	my %CONFIG = (
+		fn_messages => 'guestbook_messages.txt',  # file in SequentialFile format
+	);
 
 =head2 Use Custom Questions Defined Here
 
 	my %CONFIG = (
+		fn_messages => 'guestbook_messages.txt',  # file in SequentialFile format
 		custom_fd => 1,
 		field_defn => [
 			{
+				visible_title => "What's your age?",
+				type => 'textfield',
+				name => 'name',
+				is_required => 1,
+				validation_rule => '\d',
+				error_message => 'You must enter a number.',
+			}, {
 				visible_title => "What's the combination?",
 				type => 'checkbox_group',
 				name => 'words',
 				'values' => ['eenie', 'meenie', 'minie', 'moe'],
 				default => ['eenie', 'minie'],
 				labels => [qw( This That And Another )],
+			}, {
+				visible_title => "Who do you love?",
+				type => 'textfield',
+				name => 'name',
 			}, {
 				visible_title => "What's your favorite colour?",
 				type => 'popup_menu',
@@ -98,22 +99,25 @@ use HTML::FormTemplate 1.05;
 =head2 Use Custom Questions Defined In Perl File
 
 	my %CONFIG = (
+		fn_messages => 'guestbook_messages.txt',  # file in SequentialFile format
 		custom_fd => 1,
-		field_defn => 'survey_questions.txt',  # do Perl code to make array ref
+		field_defn => 'guestbook_questions.txt',  # do Perl code to make array ref
 	);
 
-=head2 Use Custom Questions Defined In SequentialFile File
+=head2 Use Custom Questions Defined In SequentialFile-Type File
 
 	my %CONFIG = (
+		fn_messages => 'guestbook_messages.txt',  # file in SequentialFile format
 		custom_fd => 1,
-		field_defn => 'survey_questions.txt',  # file in SequentialFile format
+		field_defn => 'guestbook_questions.txt',  # file in SequentialFile format
 		fd_in_seqf => 1,
 	);
 
 =head2 Customize Subject Of Your Emails
 
 	my %CONFIG = (
-		email_subj => 'Another Survey Response',
+		fn_messages => 'guestbook_messages.txt',
+		email_subj => 'Your Visitor Has Left A Message',
 	);
 
 =head2 Customize Webpage Intro Text
@@ -127,11 +131,24 @@ use HTML::FormTemplate 1.05;
 	and truthfully as you can, as we have a lie detector set up and any false 
 	answers will be met with spam.</P>
 	__endquote
+		msg_list_title => 'Previous Reflections',  # custom title when reading
+		msg_list_head => <<__endquote,   # custom heading for reading
+	<H1>Wise Words That You Never Wrote</H1>
+	<P>Here are the messages that previous visitors wrote.  Please stay awhile 
+	and soak in the goodness.  You never know what you don't read.</P>
+	__endquote
 	);
 
 =head1 DESCRIPTION
 
-I<This POD is coming when I get the time to write it.>
+This Perl 5 object class is part of a demonstration of HTML::Application in use.  
+It is one of a set of "application components" that takes its settings and user 
+input through HTML::Application and uses that class to send its user output.  
+This demo module set can be used together to implement a web site complete with 
+static html pages, e-mail forms, guest books, segmented text document display, 
+usage tracking, and url-forwarding.  Of course, true to the intent of 
+HTML::Application, each of the modules in this demo set can be used independantly 
+of the others.
 
 =head1 SYNTAX
 
@@ -142,8 +159,13 @@ your own modules, then that often means something like B<$self-E<gt>method()>.
 
 =head1 PUBLIC FUNCTIONS AND METHODS
 
-This module inherits its entire public interface from CGI::WPM::Base.  Please see 
-the POD for that module so you know how to call this one.
+=head2 main( GLOBALS )
+
+You invoke this method to run the application component that is encapsulated by 
+this class.  The required argument GLOBALS is an HTML::Application object that 
+you have previously configured to hold the instance settings and user input for 
+this class.  When this method returns then the encapsulated application will 
+have finished and you can get its user output from the HTML::Application object.
 
 =head1 PREFERENCES HANDLED BY THIS MODULE
 
@@ -155,12 +177,17 @@ I<This POD is coming when I get the time to write it.>
 		# If array ref, this is taken literally as list of definitions.
 		# Otherwise, this is name of a file containing the definitions.
 	fd_in_seqf  # if true, above file is of the 
-		# format that CGI::WPM::SequentialFile handles; else it is Perl code
+		# format that used to be handled by SequentialFile; else it is Perl code
+
+	fn_messages  # file messages go in, if filed
 
 	email_subj  # if set, use when sending e-mails
 
 	msg_new_title  # custom title for new messages
 	msg_new_head   # custom heading for new messages
+
+	msg_list_title  # custom title when reading
+	msg_list_head   # custom heading for reading
 
 =cut
 
@@ -176,10 +203,13 @@ my $PKEY_FIELD_DEFN = 'field_defn';  # instruc for how to make form fields
 	# If array ref, this is taken literally as list of definitions.
 	# Otherwise, this is name of a file containing the definitions.
 my $PKEY_FD_IN_SEQF = 'fd_in_seqf';  # if true, above file is of the 
-	# format that CGI::WPM::SequentialFile handles; else it is Perl code
+	# format that used to be handled by SequentialFile; else it is Perl code
+my $PKEY_FN_MESSAGES = 'fn_messages';  # file messages go in, if filed
 my $PKEY_EMAIL_SUBJ = 'email_subj';  # if set, use when sending e-mails
 my $PKEY_MSG_NEW_TITLE = 'msg_new_title'; # custom title for new messages
 my $PKEY_MSG_NEW_HEAD  = 'msg_new_head'; # custom heading for new messages
+my $PKEY_MSG_LIST_TITLE = 'msg_list_title'; # custom title when reading
+my $PKEY_MSG_LIST_HEAD  = 'msg_list_head'; # custom heading for reading
 
 # Names of the fields in our html form:
 my $FFN_NAMEREAL = 'namereal';  # user's real name
@@ -197,29 +227,40 @@ my @DEF_FORM_QUESTIONS = ( {
 	error_message => 'You must enter a message.',
 } );
 
+# Extra fields in guest book log file
+my $LFN_SUBMIT_DATE   = 'submit_date';
+my $LFN_SUBMIT_DOMAIN = 'submit_domain';
+
 # Constant values used in this class go here:
 my $EMPTY_FIELD_ECHO_STRING = '(no answer)';
+my $VRP_SIGN = 'sign';  # in this sub path is the book signing page
+	# if no sub path is chosen, we view guest book by default
 
 ######################################################################
-# This is provided so CGI::WPM::Base->dispatch_by_user() can call it.
+# This is provided so CGI::WPM::Base->main() can call it.
 
-sub _dispatch_by_user {
+sub main_dispatch {
 	my $self = shift( @_ );
 	my $globals = $self->{$KEY_SITE_GLOBALS};
 
 	SWITCH: {
-		my $ra_field_defs = $self->get_field_definitions();
+		my $ra_field_defs = $self->get_field_definitions();  # sets err on probl
 		if( $globals->get_error() ) {
 			$self->no_questions_error();
+			$globals->add_no_error();  # clears it now dealt with
 			last SWITCH;
 		}
 
 		my $form = HTML::FormTemplate->new();
-		$form->form_submit_url( $globals->self_url() );
+		$form->form_submit_url( $globals->recall_url() );
 		$form->field_definitions( $ra_field_defs );
 
-		$form->user_input( $globals->user_input() 
-			)->trim_bounding_whitespace();  # user_input() returns ref
+		unless( $globals->current_user_path_element() eq $VRP_SIGN ) {
+			$self->read_guest_book( $form );
+			last SWITCH;
+		}
+
+		$form->user_input( $globals->user_post() )->trim_bounding_whitespace();
 
 		if( $form->new_form() ) {  # if we're called first time
 			$self->new_message( $form );
@@ -233,9 +274,11 @@ sub _dispatch_by_user {
 		
 		$self->send_mail_to_me( $form ) or last SWITCH;
 		
-		$self->mail_me_ok( $form );
+		$self->sign_guest_book( $form ) or last SWITCH;
+
+		$self->mail_me_and_sign_guest_ok( $form );
 		
-		if( $globals->user_input_param( $FFN_WANTCOPY ) eq 'on' ) {
+		if( $globals->user_post_param( $FFN_WANTCOPY ) eq 'on' ) {
 			$self->send_mail_to_writer( $form );
 		}
 	}
@@ -281,7 +324,7 @@ sub get_field_definitions {
 	push( @field_definitions, 
 		{
 			type => 'submit', 
-			label => 'Send',
+			label => 'Post',
 		}, {
 			type => 'reset', 
 			label => 'Clear',
@@ -297,7 +340,7 @@ sub get_field_definitions {
 sub get_question_field_defs {
 	my $self = shift( @_ );
 	my $globals = $self->{$KEY_SITE_GLOBALS};
-	my $rh_prefs = $globals->site_prefs();
+	my $rh_prefs = $globals->get_prefs_ref();
 	
 	# check if we are using default or custom questions
 	unless( $rh_prefs->{$PKEY_CUSTOM_FD} ) {
@@ -311,11 +354,10 @@ sub get_question_field_defs {
 		return( $field_defn );  # using actual
 	}
 	
-	my $filepath = $globals->phys_filename_string( $field_defn );
-
 	# check if question file is executable Perl or not
 	unless( $rh_prefs->{$PKEY_FD_IN_SEQF} ) {  # it is Perl
-		my $ra_field_list = do $filepath;
+		my $physical_path = $globals->physical_filename( $field_defn );
+		my $ra_field_list = do $physical_path;
 		unless( ref( $ra_field_list ) eq 'ARRAY' ) {
 			$globals->add_error( "no valid array ref in '$field_defn'" );
 			return( [] );
@@ -323,8 +365,8 @@ sub get_question_field_defs {
 		return( $ra_field_list );
 	}
 	
-	# we will now get questions using CGI::WPM::SequentialFile
-	my $ra_field_list = $self->_fetch_all_records( $filepath );
+	# we will now get questions using what SequentialFile had handled
+	my $ra_field_list = $self->_fetch_all_records( $field_defn );
 	ref( $ra_field_list ) eq 'ARRAY' or $ra_field_list = [];
 	return( $ra_field_list );
 }
@@ -335,13 +377,13 @@ sub no_questions_error {
 	my $self = shift( @_ );
 	my $globals = $self->{$KEY_SITE_GLOBALS};
 
-	$globals->title( "Error Starting MailForm" );
+	$globals->page_title( "Error Starting GuestBook" );
 
-	$globals->body_content( <<__endquote );
-<H2 ALIGN="center">@{[$globals->title()]}</H2>
+	$globals->set_page_body( <<__endquote );
+<H2 ALIGN="center">@{[$globals->page_title()]}</H2>
 
 <P>I'm sorry, but an error has occurred while trying to start 
-the Mail Form.  We are missing critical settings information 
+the Guest Book.  We are missing critical settings information 
 that is required to operate.  Specifically, we don't know what 
 questions we are supposed to ask you.  Here are some details about 
 what caused this problem:</P>
@@ -354,24 +396,102 @@ __endquote
 
 ######################################################################
 
+sub read_guest_book {
+	my ($self, $form) = @_;
+	my $globals = $self->{$KEY_SITE_GLOBALS};
+	my $sign_gb_url = $globals->url_as_string( $VRP_SIGN );
+
+	my $filename = $globals->pref( $PKEY_FN_MESSAGES );
+	my @message_list = $self->_fetch_all_records( $filename );
+
+	if( my $err_msg = $globals->get_error() ) {
+		$globals->page_title( "Error Reading GuestBook Postings" );
+
+		$globals->set_page_body( <<__endquote );
+<H2 ALIGN="center">@{[$globals->page_title()]}</H2>
+
+<P>I'm sorry, but an error has occurred while trying to read the 
+existing guest book messages from the log file, meaning that I can't 
+show you any.</P>
+
+<P>details: $err_msg</P>
+
+@{[$self->_get_amendment_message()]}
+__endquote
+
+		return( 0 );
+	}
+
+	unless( @message_list ) {
+		$globals->page_title( "Empty Guest Book" );
+
+		$globals->set_page_body( <<__endquote );
+<H2 ALIGN="center">@{[$globals->page_title()]}</H2>
+
+<P>The guest book currently has no messages in it, as either none 
+were successfully posted or they were deleted since then.  You can 
+still <A HREF="$sign_gb_url">sign</A> it yourself, however.</P>
+__endquote
+
+		return( 1 );
+	}
+
+	my @message_html = ();
+	
+	foreach my $message (reverse @message_list) {
+		$form->user_input( $message );
+		my $name_real = $message->fetch_value( $FFN_NAMEREAL );
+		my $submit_date = $message->fetch_value( $LFN_SUBMIT_DATE );
+		push( @message_html, "<H3>From $name_real at $submit_date:</H3>" );
+		push( @message_html, 
+			$form->make_html_input_echo( 1, 1, $EMPTY_FIELD_ECHO_STRING ) );
+		push( @message_html, "\n<HR>" );
+	}
+	pop( @message_html );  # get rid of trailing <HR>
+	
+	$globals->set_page_body( \@message_html );		
+	
+	$globals->prepend_page_body( <<__endquote );
+<P>You may also <A HREF="$sign_gb_url">sign</A> 
+this guest book yourself, if you wish.</P>
+__endquote
+	$globals->append_page_body( <<__endquote );
+<P>You may also <A HREF="$sign_gb_url">sign</A> 
+this guest book yourself, if you wish.</P>
+__endquote
+
+	$globals->page_title( $globals->pref( $PKEY_MSG_LIST_TITLE ) || 
+		"Guest Book Messages" );
+
+	$globals->prepend_page_body( 
+		$globals->pref( $PKEY_MSG_LIST_HEAD ) || <<__endquote );
+<H2 ALIGN="center">@{[$globals->page_title()]}</H2>
+
+<P>Messages are ordered from newest to oldest.  
+__endquote
+
+	return( 1 );
+}
+
+######################################################################
+
 sub new_message {
 	my ($self, $form) = @_;
 	my $globals = $self->{$KEY_SITE_GLOBALS};
 
-	$globals->title( $globals->site_pref( $PKEY_MSG_NEW_TITLE ) || 
-		"Send Me An E-mail" );
+	$globals->page_title( $globals->pref( $PKEY_MSG_NEW_TITLE ) || 
+		"Sign the Guest Book" );
 
-	$globals->body_content( 
-		$globals->site_pref( $PKEY_MSG_NEW_HEAD ) || <<__endquote );
-<H2 ALIGN="center">@{[$globals->title()]}</H2>
+	$globals->set_page_body( 
+		$globals->pref( $PKEY_MSG_NEW_HEAD ) || <<__endquote );
+<H2 ALIGN="center">@{[$globals->page_title()]}</H2>
 
-<P>This form is provided as an easy way for you to send me a private 
-e-mail message, when you wish to contact me and/or give me your 
-thoughts on this site.  This is also a good forum to report any bugs 
-you have discovered, so I can fix them as soon as possible.</P>
+<P>This form is provided as an easy way for you to give feedback 
+concerning this web site, and at the same time, let everyone else 
+know what you think.</P>
 __endquote
 
-	$globals->body_append( <<__endquote );
+	$globals->append_page_body( <<__endquote );
 <P>The fields indicated with a '@{[$form->required_field_marker()]}' 
 are required.</P>
 
@@ -389,13 +509,13 @@ sub invalid_input {
 	my ($self, $form) = @_;
 	my $globals = $self->{$KEY_SITE_GLOBALS};
 
-	$globals->title( "Information Missing" );
+	$globals->page_title( "Information Missing" );
 
-	$globals->body_content( <<__endquote );
-<H2 ALIGN="center">@{[$globals->title()]}</H2>
+	$globals->set_page_body( <<__endquote );
+<H2 ALIGN="center">@{[$globals->page_title()]}</H2>
 
-<P>Your message could not be sent because some of the fields were not
-correctly filled in, which are indicated with a 
+<P>Your submission could not be added to the guest book because some 
+of the fields were not correctly filled in, which are indicated with a 
 '@{[$form->bad_input_marker()]}'.  Fields with a 
 '@{[$form->required_field_marker()]}' are required and can not be left 
 empty.  Please make sure you have entered your name and e-mail address 
@@ -416,19 +536,19 @@ sub send_mail_to_me {
 	my $globals = $self->{$KEY_SITE_GLOBALS};
 
 	my $err_msg = $self->_send_email_message(
-		$globals->site_owner_name(),
-		$globals->site_owner_email(),
-		$globals->user_input_param( $FFN_NAMEREAL ),
-		$globals->user_input_param( $FFN_EMAIL ),
-		$globals->site_pref( $PKEY_EMAIL_SUBJ ) || 
-			$globals->site_title().' -- Private Mail Message',
+		$self->_site_owner_name(),
+		$self->_site_owner_email(),
+		$globals->user_post_param( $FFN_NAMEREAL ),
+		$globals->user_post_param( $FFN_EMAIL ),
+		$globals->pref( $PKEY_EMAIL_SUBJ ) || 
+			$self->_site_title().' -- GuestBook Message',
 		$form->make_text_input_echo( 0, $EMPTY_FIELD_ECHO_STRING ),
 		<<__endquote.
 It is the result of a form submission from a site visitor, 
-"@{[$globals->user_input_param( $FFN_NAMEREAL )]}" <@{[$globals->user_input_param( $FFN_EMAIL )]}>.
-From: @{[$globals->remote_addr()]} @{[$globals->remote_host()]}.
+"@{[$globals->user_post_param( $FFN_NAMEREAL )]}" <@{[$globals->user_post_param( $FFN_EMAIL )]}>.
+From: @{[$self->_remote_addr()]} @{[$self->_remote_host()]}.
 __endquote
-		($globals->user_input_param( $FFN_WANTCOPY ) ? 
+		($globals->user_post_param( $FFN_WANTCOPY ) ? 
 		"The visitor also requested a copy be sent to them.\n" : 
 		"The visitor did not request a copy be sent to them.\n"),
 	);
@@ -436,13 +556,14 @@ __endquote
 	if( $err_msg ) {
 		$globals->add_error( $err_msg );
 	
-		$globals->title( "Error Sending Mail" );
+		$globals->page_title( "Error Sending Mail" );
 
-		$globals->body_content( <<__endquote );
-<H2 ALIGN="center">@{[$globals->title()]}</H2>
+		$globals->set_page_body( <<__endquote );
+<H2 ALIGN="center">@{[$globals->page_title()]}</H2>
 
 <P>I'm sorry, but an error has occurred while trying to e-mail your 
-message to me.  As a result I will not see it.</P>
+message to me.  It also hasn't been added to the guest book.  As a 
+result, no one will see it.</P>
 
 <P>This problem can occur if you enter a nonexistant or unreachable 
 e-mail address into the e-mail field, in which case, please enter a 
@@ -460,6 +581,7 @@ patient and don't click Send multiple times.  A confirmation message
 will appear if everything worked.</P>
 __endquote
 
+		$globals->add_no_error();
 		return( 0 );
 	}
 	
@@ -468,25 +590,71 @@ __endquote
 
 ######################################################################
 
-sub mail_me_ok {
+sub sign_guest_book {
 	my ($self, $form) = @_;
 	my $globals = $self->{$KEY_SITE_GLOBALS};
 
-	$globals->title( "Your Message Has Been Sent" );
+	my $new_posting = $globals->user_post();
+	$new_posting->store( $LFN_SUBMIT_DATE, $self->_today_date_utc() );
+	$new_posting->store( $LFN_SUBMIT_DOMAIN, 
+		$self->_remote_addr().':'.$self->_remote_host() );
 
-	$globals->body_content( <<__endquote );
-<H2 ALIGN="center">@{[$globals->title()]}</H2>
+	my $filename = $globals->pref( $PKEY_FN_MESSAGES );
+	$self->_append_new_records( $filename, $new_posting );
 
-<P>This is what the message said:</P>
+	if( my $err_msg = $globals->get_error() ) {
+		$globals->add_error( $err_msg );
+	
+		$globals->page_title( "Error Writing to Guest Book" );
+
+		$globals->set_page_body( <<__endquote );
+<H2 ALIGN="center">@{[$globals->page_title()]}</H2>
+
+<P>I'm sorry, but an error has occurred while trying to write your 
+message into the guest book.  As a result it will not appear when
+the guest book is viewed by others.  However, the message was
+e-mailed to me.</P>
+
+<P>details: $err_msg</P>
+
+@{[$self->_get_amendment_message()]}
+
+@{$form->make_html_input_form( 1, 1 )}
+
+<P>It may take from 1 to 30 seconds to process this form, so please be 
+patient and don't click Send multiple times.  A confirmation message 
+will appear if everything worked.</P>
+__endquote
+
+		$globals->add_no_error();
+		return( 0 );
+	}
+	
+	return( 1 );
+}
+
+######################################################################
+
+sub mail_me_and_sign_guest_ok {
+	my ($self, $form) = @_;
+	my $globals = $self->{$KEY_SITE_GLOBALS};
+
+	$globals->page_title( "Your Message Has Been Added" );
+
+	$globals->set_page_body( <<__endquote );
+<H2 ALIGN="center">@{[$globals->page_title()]}</H2>
+
+<P>Your message has been added to this guest book, and a copy was 
+e-mailed to me as well.  This is what the copy e-mailed to me said:</P>
 
 <P><STRONG>To:</STRONG> 
-@{[$globals->site_owner_name()]}
+@{[$self->_site_owner_name()]}
 <BR><STRONG>From:</STRONG> 
-@{[$globals->user_input_param( $FFN_NAMEREAL )]} 
-&lt;@{[$globals->user_input_param( $FFN_EMAIL )]}&gt;
+@{[$globals->user_post_param( $FFN_NAMEREAL )]} 
+&lt;@{[$globals->user_post_param( $FFN_EMAIL )]}&gt;
 <BR><STRONG>Subject:</STRONG> 
-@{[$globals->site_pref( $PKEY_EMAIL_SUBJ ) || 
-	$globals->site_title().' -- Private Mail Message']}</P>
+@{[$globals->pref( $PKEY_EMAIL_SUBJ ) || 
+	$self->_site_title().' -- GuestBook Message']}</P>
 
 @{[$form->make_html_input_echo( 1, 1, $EMPTY_FIELD_ECHO_STRING )]}
 __endquote
@@ -499,31 +667,32 @@ sub send_mail_to_writer {
 	my $globals = $self->{$KEY_SITE_GLOBALS};
 
 	my $err_msg = $self->_send_email_message(
-		$globals->user_input_param( $FFN_NAMEREAL ),
-		$globals->user_input_param( $FFN_EMAIL ),
-		$globals->site_owner_name(),
-		$globals->site_owner_email(),
-		$globals->site_pref( $PKEY_EMAIL_SUBJ ) || 
-			$globals->site_title().' -- Private Mail Message',
+		$globals->user_post_param( $FFN_NAMEREAL ),
+		$globals->user_post_param( $FFN_EMAIL ),
+		$self->_site_owner_name(),
+		$self->_site_owner_email(),
+		$globals->pref( $PKEY_EMAIL_SUBJ ) || 
+			$self->_site_title().' -- GuestBook Message',
 		$form->make_text_input_echo( 0, $EMPTY_FIELD_ECHO_STRING ),
 		<<__endquote,
 It is the result of a form submission from a site visitor, 
-"@{[$globals->user_input_param( $FFN_NAMEREAL )]}" <@{[$globals->user_input_param( $FFN_EMAIL )]}>.
-From: @{[$globals->remote_addr()]} @{[$globals->remote_host()]}.
+"@{[$globals->user_post_param( $FFN_NAMEREAL )]}" <@{[$globals->user_post_param( $FFN_EMAIL )]}>.
+From: @{[$self->_remote_addr()]} @{[$self->_remote_host()]}.
 __endquote
 	);
 
 	if( $err_msg ) {
 		$globals->add_error( $err_msg );
-		$globals->body_append( <<__endquote );
+		$globals->append_page_body( <<__endquote );
 <P>However, something went wrong when trying to send you a copy:
 $err_msg.</P>
 __endquote
+		$globals->add_no_error();
 
 	} else {
-		$globals->body_append( <<__endquote );
+		$globals->append_page_body( <<__endquote );
 <P>Also, a copy was successfully sent to you at 
-'@{[$globals->user_input_param( $FFN_EMAIL )]}'.</P>
+'@{[$globals->user_post_param( $FFN_EMAIL )]}'.</P>
 __endquote
 	}
 }
@@ -532,42 +701,72 @@ __endquote
 
 sub _fetch_all_records {
 	my $self = shift( @_ );
-	my $file_path = shift( @_ );
+	my $filename = shift( @_ );
+	my $globals = $self->{$KEY_SITE_GLOBALS};
 	
 	my $fh = gensym;
 	
-	$self->_open_and_lock( $fh, $file_path, 0 ) or return( undef );
+	$self->_open_and_lock( $fh, $filename, 0 ) or return( undef );
 
 	seek( $fh, 0, 0 ) or do {
-		$self->_make_filesystem_error( "seek start of", $file_path );
+		$globals->add_virtual_filename_error( "seek start of", $filename );
 		return( undef );
 	};
 
 	my $ra_record_list = CGI::MultiValuedHash->batch_from_file( $fh, 1 ) or do {
-		$self->_make_filesystem_error( "read record from", $file_path );
+		$globals->add_virtual_filename_error( "read record from", $filename );
 		return( undef );
 	};
 
-	$self->_unlock_and_close( $fh, $file_path ) or return( undef );
+	$self->_unlock_and_close( $fh, $filename ) or return( undef );
 
 	return( wantarray ? @{$ra_record_list} : $ra_record_list );
 }
 
 ######################################################################
 
-sub _open_and_lock {
-	my ($self, $fh, $file_path, $read_and_write) = @_;
+sub _append_new_records {
+	my $self = shift( @_ );
+	my $filename = shift( @_ );
+	my $ra_record_list = (ref( $_[0] ) eq 'ARRAY') ? $_[0] : [@_];
+	my $globals = $self->{$KEY_SITE_GLOBALS};
 	
+	my $fh = gensym;
+	
+	$self->_open_and_lock( $fh, $filename, 1 ) or return( undef );
+
+	seek( $fh, 0, 2 ) or do {
+		$globals->add_virtual_filename_error( "seek end of", $filename );
+		return( undef );
+	};
+
+	CGI::MultiValuedHash->batch_to_file( $fh, $ra_record_list ) or do {
+		$globals->add_virtual_filename_error( "write record to", $filename );
+		return( undef );
+	};
+
+	$self->_unlock_and_close( $fh, $filename ) or return( undef );
+
+	return( 1 );
+}
+
+######################################################################
+
+sub _open_and_lock {
+	my ($self, $fh, $filename, $read_and_write) = @_;
+	my $globals = $self->{$KEY_SITE_GLOBALS};
+	
+	my $physical_path = $globals->physical_filename( $filename );
 	my $flags = $read_and_write ? O_RDWR|O_CREAT : O_RDONLY|O_CREAT;
 	my $perms = 0666;
 
-	sysopen( $fh, $file_path, $flags, $perms ) or do {
-		$self->_make_filesystem_error( "open", $file_path );
+	sysopen( $fh, $physical_path, $flags, $perms ) or do {
+		$globals->add_virtual_filename_error( "open", $filename );
 		return( undef );
 	};
 
 	flock( $fh, $read_and_write ? LOCK_EX : LOCK_SH ) or do {
-		$self->_make_filesystem_error( "lock", $file_path );
+		$globals->add_virtual_filename_error( "lock", $filename );
 		return( undef );
 	};
 
@@ -577,27 +776,20 @@ sub _open_and_lock {
 ######################################################################
 
 sub _unlock_and_close {
-	my ($self, $fh, $file_path) = @_;
+	my ($self, $fh, $filename) = @_;
+	my $globals = $self->{$KEY_SITE_GLOBALS};
 	
 	flock( $fh, LOCK_UN ) or do {
-		$self->_make_filesystem_error( "unlock", $file_path );
+		$globals->add_virtual_filename_error( "unlock", $filename );
 		return( undef );
 	};
 
 	close( $fh ) or do {
-		$self->_make_filesystem_error( "close", $file_path );
+		$globals->add_virtual_filename_error( "close", $filename );
 		return( undef );
 	};
 
 	return( 1 );
-}
-
-######################################################################
-
-sub _make_filesystem_error {
-	my ($self, $unique_part, $file_path) = @_;
-	my $globals = $self->{$KEY_SITE_GLOBALS};
-	$globals->add_error( "can't $unique_part data file '$file_path': $!" );
 }
 
 ######################################################################
@@ -617,8 +809,8 @@ sub _send_email_message {
 	my $body_header = <<__endquote.
 --------------------------------------------------
 This e-mail was sent at @{[$self->_today_date_utc()]} 
-by the web site "@{[$globals->site_title()]}", 
-which is located at "@{[$globals->base_url()]}".
+by the web site "@{[$self->_site_title()]}", 
+which is located at "@{[$globals->url_base()]}".
 __endquote
 	$body_head_addition.
 	($globals->is_debug() ? "Debugging is currently turned on.\n" : 
@@ -633,8 +825,8 @@ __endquote
 END OF MESSAGE
 __endquote
 	
-	my $host = $globals->smtp_host();
-	my $timeout = $globals->smtp_timeout();
+	my $host = $self->_smtp_host();
+	my $timeout = $self->_smtp_timeout();
 	my $error_msg = '';
 
 	TRY: {
@@ -700,6 +892,11 @@ sub _today_date_utc {
 
 ######################################################################
 
+sub _remote_addr { $ENV{'REMOTE_ADDR'} || '127.0.0.1' }
+sub _remote_host { $ENV{'REMOTE_HOST'} || $ENV{'REMOTE_ADDR'} || 'localhost' }
+
+######################################################################
+
 1;
 __END__
 
@@ -720,7 +917,7 @@ Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>.
 
 =head1 SEE ALSO
 
-perl(1), CGI::WPM::Base, CGI::WPM::Globals, HTML::FormTemplate, 
+perl(1), HTML::Application, CGI::WPM::Base, HTML::FormTemplate, 
 CGI::MultiValuedHash, Net::SMTP, Fcntl, Symbol.
 
 =cut

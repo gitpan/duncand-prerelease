@@ -8,16 +8,16 @@
 
 BEGIN { $| = 1; print "1..1\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use CGI::WPM::CountFile 0.36;
-use CGI::WPM::Globals 0.38;
-use CGI::WPM::Base 0.34;
-use CGI::WPM::MultiPage 0.34;
-use CGI::WPM::Static 0.34;
-use CGI::WPM::MailForm 0.36;
-use CGI::WPM::GuestBook 0.36;
-use CGI::WPM::SegTextDoc 0.34;
-use CGI::WPM::Redirect 0.34;
-use CGI::WPM::Usage 0.36;
+use CGI::WPM::SimpleUserIO 0.4;
+use CGI::WPM::CountFile 0.4;
+use CGI::WPM::Base 0.4;
+use CGI::WPM::MultiPage 0.4;
+use CGI::WPM::Static 0.4;
+use CGI::WPM::MailForm 0.4;
+use CGI::WPM::GuestBook 0.4;
+use CGI::WPM::SegTextDoc 0.4;
+use CGI::WPM::Redirect 0.4;
+use CGI::WPM::Usage 0.4;
 $loaded = 1;
 print "ok 1\n";
 use strict;

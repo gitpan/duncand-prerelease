@@ -1,7 +1,7 @@
 =head1 NAME
 
-CGI::WPM::Usage - Perl module that is a subclass of CGI::WPM::Base and tracks
-site usage details, as well as e-mail backups of usage counts to the site owner.
+CGI::WPM::Usage - Demo of HTML::Application that tracks web site usage details, 
+as well as e-mail backups of usage counts to the site owner.
 
 =cut
 
@@ -18,7 +18,7 @@ require 5.004;
 
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = '0.36';
+$VERSION = '0.4';
 
 ######################################################################
 
@@ -34,43 +34,24 @@ $VERSION = '0.36';
 
 =head2 Nonstandard Modules
 
-	CGI::WPM::Base 0.34
-	CGI::WPM::Globals 0.34
-	CGI::WPM::CountFile 0.36
+	HTML::Application 0.4
+	CGI::WPM::Base 0.4
+	CGI::WPM::CountFile 0.4
 
 =cut
 
 ######################################################################
 
-use CGI::WPM::Base 0.34;
+use HTML::Application 0.4;
+use CGI::WPM::Base 0.4;
 @ISA = qw(CGI::WPM::Base);
-use CGI::WPM::CountFile 0.36;
+use CGI::WPM::CountFile 0.4;
 
 ######################################################################
 
 =head1 SYNOPSIS
 
-	require CGI::WPM::Globals;
-	my $globals = CGI::WPM::Globals->new( "/path/to/site/files" );  # get input
-
-	if( $globals->user_input_param( 'debugging' ) eq 'on' ) {
-		$globals->is_debug( 1 );  # let us keep separate logs when debugging
-	}
-
-	$globals->site_title( 'Sample Web Site' );  # use this in e-mail subjects
-	$globals->site_owner_name( 'Darren Duncan' );  # send reports to him
-	$globals->site_owner_email( 'darren@sampleweb.net' );  # send reports here
-
-	require CGI::WPM::Usage;
-	$globals->move_current_srp( $globals->is_debug() ? 'usage_debug' : 'usage' );
-	$globals->move_site_prefs( '../usage_prefs.pl' );  # configuration file
-	CGI::WPM::Usage->execute( $globals );  # do all the work
-	$globals->restore_site_prefs();
-	$globals->restore_last_srp();
-
-	$globals->send_to_user();  # send output
-
-=head2 Content of Configuration File "usage_prefs.pl"
+=head2 An example configuration file instructing to track as much as possible
 
 	my $rh_preferences = { 
 		email_logs => 1,  # do we want to be sent daily reports?
@@ -139,7 +120,14 @@ use CGI::WPM::CountFile 0.36;
 
 =head1 DESCRIPTION
 
-I<This POD is coming when I get the time to write it.>
+This Perl 5 object class is part of a demonstration of HTML::Application in use.  
+It is one of a set of "application components" that takes its settings and user 
+input through HTML::Application and uses that class to send its user output.  
+This demo module set can be used together to implement a web site complete with 
+static html pages, e-mail forms, guest books, segmented text document display, 
+usage tracking, and url-forwarding.  Of course, true to the intent of 
+HTML::Application, each of the modules in this demo set can be used independantly 
+of the others.
 
 =head1 SYNTAX
 
@@ -150,13 +138,17 @@ your own modules, then that often means something like B<$self-E<gt>method()>.
 
 =head1 PUBLIC FUNCTIONS AND METHODS
 
-This module inherits its entire public interface from CGI::WPM::Base.  Please see 
-the POD for that module so you know how to call this one.
+=head2 main( GLOBALS )
+
+You invoke this method to run the application component that is encapsulated by 
+this class.  The required argument GLOBALS is an HTML::Application object that 
+you have previously configured to hold the instance settings and user input for 
+this class.  When this method returns then the encapsulated application will 
+have finished and you can get its user output from the HTML::Application object.
 
 =head1 PREFERENCES HANDLED BY THIS MODULE
 
-I<This POD is coming when I get the time to write it.  Meanwhile, the 
-Synopsis uses the most important ones.  Most of them are optional.>
+I<This POD is coming when I get the time to write it.>
 
 =cut
 
@@ -252,12 +244,12 @@ my %DEF_SEARCH_ENGINE_TERMS = (  # match keys against domains proper only
 );
 
 ######################################################################
-# This is provided so CGI::WPM::Base->dispatch_by_user() can call it.
+# This is provided so CGI::WPM::Base->main() can call it.
 
-sub _dispatch_by_user {
+sub main_dispatch {
 	my $self = shift( @_ );
 	my $globals = $self->{$KEY_SITE_GLOBALS};
-	my $rh_prefs = $globals->site_prefs();
+	my $rh_prefs = $globals->get_prefs_ref();
 
 	$rh_prefs->{$PKEY_TOKEN_TOTAL} ||= '__total__';
 	$rh_prefs->{$PKEY_TOKEN_NIL} ||= '__nil__';
@@ -278,13 +270,13 @@ sub _dispatch_by_user {
 sub email_and_reset_counts_if_new_day {
 	my $self = shift( @_ );
 	my $globals = $self->{$KEY_SITE_GLOBALS};
-	my $rh_prefs = $globals->site_prefs();
+	my $rh_prefs = $globals->get_prefs_ref();
 
 	$rh_prefs->{$PKEY_EMAIL_LOGS} or return( 1 );
 
 	$globals->add_no_error();
 	my $dcm_file = CGI::WPM::CountFile->new( 
-		$globals->phys_filename_string( $rh_prefs->{$PKEY_FN_DCM} ), 1 );
+		$globals->physical_filename( $rh_prefs->{$PKEY_FN_DCM} ), 1 );
 	$dcm_file->open_and_lock( 1 ) or do {
 		$globals->add_error( $dcm_file->is_error() );
 		return( 0 );
@@ -314,7 +306,7 @@ sub email_and_reset_counts_if_new_day {
 		foreach my $filename (@{$ra_filenames}) {
 			$filename or next;
 			my $count_file = CGI::WPM::CountFile->new( 
-				$globals->phys_filename_string( $filename ), 1 );
+				$globals->physical_filename( $filename ), 1 );
 			$count_file->open_and_lock( 1 ) or do {
 				push( @mail_body, "\n\n".$count_file->is_error()."\n" );
 				next;
@@ -336,11 +328,11 @@ sub email_and_reset_counts_if_new_day {
 		defined( $subject_unique) or $subject_unique = ' -- usage to ';
 
 		my $err_msg = $self->_send_email_message(
-			$globals->site_owner_name(),
-			$globals->site_owner_email(),
-			$globals->site_owner_name(),
-			$globals->site_owner_email(),
-			$globals->site_title().$subject_unique.$today_str,
+			$self->_site_owner_name(),
+			$self->_site_owner_email(),
+			$self->_site_owner_name(),
+			$self->_site_owner_email(),
+			$self->_site_title().$subject_unique.$today_str,
 			join( '', @mail_body ),
 			<<__endquote,
 This is a daily copy of the site usage count logs.
@@ -359,7 +351,7 @@ __endquote
 sub update_env_counts {
 	my $self = shift( @_ );
 	my $globals = $self->{$KEY_SITE_GLOBALS};
-	my $rh_prefs = $globals->site_prefs();
+	my $rh_prefs = $globals->get_prefs_ref();
 	
 	my $rh_log_prefs = $rh_prefs->{$PKEY_LOG_ENV};
 	ref( $rh_log_prefs ) eq 'HASH' or return( 0 );
@@ -378,7 +370,7 @@ sub update_env_counts {
 sub update_site_vrp_counts {
 	my $self = shift( @_ );
 	my $globals = $self->{$KEY_SITE_GLOBALS};
-	my $rh_prefs = $globals->site_prefs();
+	my $rh_prefs = $globals->get_prefs_ref();
 	
 	my $rh_log_prefs = $rh_prefs->{$PKEY_LOG_SITE};
 	ref( $rh_log_prefs ) eq 'HASH' or return( 0 );
@@ -388,8 +380,8 @@ sub update_site_vrp_counts {
 	
 	# save which page within this site was hit
 	$self->update_one_count_file( $filename, 
-		$globals->user_vrp_string(), 
-		$globals->redirect_url() ? $t_rd : () );
+		$globals->user_path_string(), 
+		$globals->http_redirect_url() ? $t_rd : () );
 }
 
 ######################################################################
@@ -397,7 +389,7 @@ sub update_site_vrp_counts {
 sub update_redirect_counts {
 	my $self = shift( @_ );
 	my $globals = $self->{$KEY_SITE_GLOBALS};
-	my $rh_prefs = $globals->site_prefs();
+	my $rh_prefs = $globals->get_prefs_ref();
 	
 	my $rh_log_prefs = $rh_prefs->{$PKEY_LOG_REDIRECT};
 	ref( $rh_log_prefs ) eq 'HASH' or return( 0 );
@@ -405,7 +397,7 @@ sub update_redirect_counts {
 	my $filename = $rh_log_prefs->{$LKEY_FILENAME} or return( 0 );
 	
 	# save which url this site referred the visitor to, if any
-	$self->update_one_count_file( $filename, $globals->redirect_url() );
+	$self->update_one_count_file( $filename, $globals->http_redirect_url() );
 }
 
 ######################################################################
@@ -413,7 +405,7 @@ sub update_redirect_counts {
 sub update_referrer_counts {
 	my $self = shift( @_ );
 	my $globals = $self->{$KEY_SITE_GLOBALS};
-	my $rh_prefs = $globals->site_prefs();
+	my $rh_prefs = $globals->get_prefs_ref();
 	
 	my $rh_log_prefs = $rh_prefs->{$PKEY_LOG_REFERRER};
 	ref( $rh_log_prefs ) eq 'HASH' or return( 0 );
@@ -428,7 +420,7 @@ sub update_referrer_counts {
 	
 	my $ra_site_urls = $rh_log_prefs->{$RKEY_SITE_URLS} || [];
 	ref( $ra_site_urls ) eq 'ARRAY' or $ra_site_urls = [$ra_site_urls];
-	unshift( @{$ra_site_urls}, $globals->base_url() );
+	unshift( @{$ra_site_urls}, $globals->url_base() );
 	
 	my $ra_discards = $rh_log_prefs->{$RKEY_DISCARDS} || [];
 	ref( $ra_discards ) eq 'ARRAY' or $ra_discards = [$ra_discards];
@@ -443,7 +435,7 @@ sub update_referrer_counts {
 	my (@ref_norm, @ref_sear, @ref_keyw, @ref_disc);
 
 	SWITCH: {
-		my $referer = $globals->http_referer();
+		my $referer = $self->_http_referer();
 		my ($ref_filename, $query) = split( /\?/, $referer, 2 );
 		$ref_filename =~ s|/$||;     # lose trailing "/"s
 		$referer = ($query =~ /[a-zA-Z0-9]/) ? 
@@ -518,12 +510,12 @@ sub update_referrer_counts {
 sub update_one_count_file {
 	my ($self, $filename, @keys_to_inc) = @_;
 	my $globals = $self->{$KEY_SITE_GLOBALS};
-	my $rh_prefs = $globals->site_prefs();
+	my $rh_prefs = $globals->get_prefs_ref();
 
 	push( @keys_to_inc, $rh_prefs->{$PKEY_TOKEN_TOTAL} );
 
 	my $count_file = CGI::WPM::CountFile->new( 
-		$globals->phys_filename_string( $filename ), 1 );
+		$globals->physical_filename( $filename ), 1 );
 	$count_file->open_and_lock( 1 ) or return( 0 );
 	$count_file->read_all_records();
 
@@ -553,8 +545,8 @@ sub _send_email_message {
 	my $body_header = <<__endquote.
 --------------------------------------------------
 This e-mail was sent at @{[$self->_today_date_utc()]} 
-by the web site "@{[$globals->site_title()]}", 
-which is located at "@{[$globals->base_url()]}".
+by the web site "@{[$self->_site_title()]}", 
+which is located at "@{[$globals->url_base()]}".
 __endquote
 	$body_head_addition.
 	($globals->is_debug() ? "Debugging is currently turned on.\n" : 
@@ -569,8 +561,8 @@ __endquote
 END OF MESSAGE
 __endquote
 	
-	my $host = $globals->smtp_host();
-	my $timeout = $globals->smtp_timeout();
+	my $host = $self->_smtp_host();
+	my $timeout = $self->_smtp_timeout();
 	my $error_msg = '';
 
 	TRY: {
@@ -636,6 +628,15 @@ sub _today_date_utc {
 
 ######################################################################
 
+sub _http_referer {
+	my $str = $ENV{'HTTP_REFERER'};
+	$str =~ tr/+/ /;
+	$str =~ s/%([0-9a-fA-F]{2})/pack("c",hex($1))/ge;
+	return( $str );
+}
+
+######################################################################
+
 1;
 __END__
 
@@ -656,6 +657,6 @@ Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>.
 
 =head1 SEE ALSO
 
-perl(1), CGI::WPM::Base, CGI::WPM::Globals, CGI::WPM::CountFile, Net::SMTP.
+perl(1), HTML::Application, CGI::WPM::Base, CGI::WPM::CountFile, Net::SMTP.
 
 =cut

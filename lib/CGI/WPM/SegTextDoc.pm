@@ -1,7 +1,7 @@
 =head1 NAME
 
-CGI::WPM::SegTextDoc - Perl module that is a subclass of CGI::WPM::Base and
-displays a static text page, which can be in multiple segments.
+CGI::WPM::SegTextDoc - Demo of HTML::Application that displays a static text 
+page, which can be in multiple segments.
 
 =cut
 
@@ -18,7 +18,7 @@ require 5.004;
 
 use strict;
 use vars qw($VERSION @ISA);
-$VERSION = '0.34';
+$VERSION = '0.4';
 
 ######################################################################
 
@@ -34,17 +34,18 @@ $VERSION = '0.34';
 
 =head2 Nonstandard Modules
 
-	CGI::WPM::Base 0.34
-	CGI::WPM::Globals 0.34
-	CGI::WPM::Static 0.34
+	HTML::Application 0.4
+	CGI::WPM::Base 0.4
+	CGI::WPM::Static 0.4
 
 =cut
 
 ######################################################################
 
-use CGI::WPM::Base 0.34;
+use HTML::Application 0.4;
+use CGI::WPM::Base 0.4;
 @ISA = qw(CGI::WPM::Base);
-use CGI::WPM::Static 0.34;
+use CGI::WPM::Static 0.4;
 
 ######################################################################
 
@@ -52,50 +53,41 @@ use CGI::WPM::Static 0.34;
 
 =head2 Display A Text File In Multiple Segments
 
-	require CGI::WPM::Globals;
-	my $globals = CGI::WPM::Globals->new( "/path/to/site/files" );
-
-	$globals->user_vrp( lc( $globals->user_input_param(  # fetch extra path info...
-		$globals->vrp_param_name( 'path' ) ) ) );  # to know what page user wants
-	$globals->current_user_vrp_level( 1 );  # get ready to examine start of vrp
-	
-	require CGI::WPM::Static;
-	$globals->move_site_prefs( {
+	my %CONFIG = (
 		title => 'Index of the World',
 		author => 'Jules Verne',
 		created => 'Version 1.0, first created 1993 June 24',
 		updated => 'Version 3.1, last modified 2000 November 18',
 		filename => 'jv_world.txt',
 		segments => 24,
-	} );
-	CGI::WPM::Static->execute( $globals );  # content-type: text/html
-	
-	$globals->send_to_user();
+	);
 
 I<You need to have a subdirectory named "jv_world" that contains the 24 files 
 that correspond to the segments, named "jv_world_001.txt" through "...024.txt".>
 
 =head2 Display A Text File All On One Page
 
-	$globals->move_site_prefs( {
+	my %CONFIG = (
 		title => 'Pizza Joints In New York',
 		author => 'Oscar Wilder',
 		created => 'Version 0.5, first created 1997 February 17',
 		updated => 'Version 1.2, last modified 1998 March 8',
 		filename => 'ow_pizza.txt',
 		segments => 1,  # also the default
-	} );
+	);
 
 I<You need to have a single file named "ow_pizza.txt", not in a subdirectory.>
 
 =head1 DESCRIPTION
 
-I<This POD is coming when I get the time to write it.>
-
-When the file is in multiple segments, a subdirectory is used to hold the pieces.  
-When the file is in one part, there is no subdirectory.  Multipart documents have 
-a navigation bar automatically generated to go between them.  Documents are 
-assumed to be plain text, and are HTML escaped.
+This Perl 5 object class is part of a demonstration of HTML::Application in use.  
+It is one of a set of "application components" that takes its settings and user 
+input through HTML::Application and uses that class to send its user output.  
+This demo module set can be used together to implement a web site complete with 
+static html pages, e-mail forms, guest books, segmented text document display, 
+usage tracking, and url-forwarding.  Of course, true to the intent of 
+HTML::Application, each of the modules in this demo set can be used independantly 
+of the others.
 
 =head1 SYNTAX
 
@@ -106,8 +98,13 @@ your own modules, then that often means something like B<$self-E<gt>method()>.
 
 =head1 PUBLIC FUNCTIONS AND METHODS
 
-This module inherits its entire public interface from CGI::WPM::Base.  Please see 
-the POD for that module so you know how to call this one.
+=head2 main( GLOBALS )
+
+You invoke this method to run the application component that is encapsulated by 
+this class.  The required argument GLOBALS is an HTML::Application object that 
+you have previously configured to hold the instance settings and user input for 
+this class.  When this method returns then the encapsulated application will 
+have finished and you can get its user output from the HTML::Application object.
 
 =head1 PREFERENCES HANDLED BY THIS MODULE
 
@@ -140,32 +137,26 @@ my $PKEY_SEGMENTS = 'segments';  # number of pieces doc is in
 # Constant values used in this class go here:
 
 ######################################################################
-# This is provided so CGI::WPM::Base->dispatch_by_user() can call it.
+# This is provided so CGI::WPM::Base->main() can call it.
 
-sub _dispatch_by_user {
+sub main_dispatch {
 	my $self = shift( @_ );
 	my $globals = $self->{$KEY_SITE_GLOBALS};
-	my $rh_prefs = $globals->site_prefs();
+	my $rh_prefs = $globals->get_prefs_ref();
 	
 	my $segments = $rh_prefs->{$PKEY_SEGMENTS};
 	$segments >= 1 or $rh_prefs->{$PKEY_SEGMENTS} = $segments = 1;
 
-	my $curr_seg_num = $globals->current_user_vrp_element();
+	my $curr_seg_num = $globals->current_user_path_element();
 	$curr_seg_num >= 1 or $curr_seg_num = 1;
 	$curr_seg_num <= $segments or $curr_seg_num = $segments;
-	$globals->current_user_vrp_element( $curr_seg_num );
+	$globals->current_user_path_element( $curr_seg_num );
 	
-	$self->get_curr_seg_content();  # sets an error if it didn't work
-	unless( $globals->get_error() ) {
-		if( $segments > 1 ) {
-			$self->attach_document_navbar();
-		}
-		$self->attach_document_header();
+	$self->get_curr_seg_content();
+	if( $segments > 1 ) {
+		$self->attach_document_navbar();
 	}
-	
-	# This is provided just so usage listings sorted alphabetically 
-	# will show all the parts in the correct order.
-	$globals->current_user_vrp_element( sprintf( "%3.3d", $curr_seg_num ) );
+	$self->attach_document_header();
 }
 
 ######################################################################
@@ -173,26 +164,47 @@ sub _dispatch_by_user {
 sub get_curr_seg_content {
 	my $self = shift( @_ );
 	my $globals = $self->{$KEY_SITE_GLOBALS};
-	my $rh_prefs = $globals->site_prefs();
+	my $rh_prefs = $globals->get_prefs_ref();
 	my $is_multi_segmented = $rh_prefs->{$PKEY_SEGMENTS} > 1;
 
 	my ($base, $ext) = ($rh_prefs->{$PKEY_FILENAME} =~ m/^([^\.]*)(.*)$/);
 	my $seg_num_str = $is_multi_segmented ?
-		'_'.sprintf( "%3.3d", $globals->current_user_vrp_element() ) : '';
+		'_'.sprintf( "%3.3d", $globals->current_user_path_element() ) : '';
 
 	my $wpm_prefs = {
 		filename => "$base$seg_num_str$ext",
 		is_text => 1,
 	};
 
-	$is_multi_segmented and $globals->move_current_srp( $base );
-	$globals->move_site_prefs( $wpm_prefs );
+	my $wpm_context = $globals->make_new_context();
+	$is_multi_segmented and $wpm_context->navigate_file_path( $base );
+	$wpm_context->set_prefs( $wpm_prefs );
 
-	my $wpm = CGI::WPM::Static->new( $globals );
-	$wpm->dispatch_by_user();  # sets error if content couldn't be read
+	my $wpm_mod_name = 'CGI::WPM::Static';
+	$wpm_context->call_component( $wpm_mod_name, 1 );
 
-	$globals->restore_site_prefs();
-	$is_multi_segmented and $globals->restore_last_srp();
+	if( my $msg = $wpm_context->get_error() ) {
+		$globals->add_error( $msg );
+	
+		$globals->page_title( 'Error Getting Page' );
+
+		$globals->set_page_body( <<__endquote );
+<H2 ALIGN="center">@{[$globals->page_title()]}</H2>
+
+<P>I'm sorry, but an error occurred while getting the requested
+page.  We were unable to use the module that was supposed to 
+generate the page content, named "$wpm_mod_name".</P>
+
+@{[$self->_get_amendment_message()]}
+
+<P>$msg</P>
+__endquote
+
+		$globals->add_no_error();
+	
+	} else {
+		$globals->set_page_body( $wpm_context->get_page_body() );
+	}
 }
 
 ######################################################################
@@ -201,25 +213,29 @@ sub attach_document_navbar {
 	my $self = shift( @_ );
 	my $globals = $self->{$KEY_SITE_GLOBALS};
 
-	my $segments = $globals->site_prefs()->{$PKEY_SEGMENTS};
-	my $curr_seg_num = $globals->current_user_vrp_element();
-	my $common_url = $globals->persistant_vrp_url( '', 1 );
+	my $segments = $globals->get_prefs_ref()->{$PKEY_SEGMENTS};
+	my $curr_seg_num = $globals->current_user_path_element();
+	my $seg_token = '__std_seg_token__';
+	my $common_url = $globals->url_as_string( $seg_token );
 
 	my @seg_list_html = ();
 	foreach my $seg_num (1..$segments) {
 		if( $seg_num == $curr_seg_num ) {
 			push( @seg_list_html, "$seg_num\n" );
 		} else {
-			push( @seg_list_html, 
-				"<A HREF=\"$common_url$seg_num\">$seg_num</A>\n" );
+			my $curr_seg_html = "<A HREF=\"$common_url\">$seg_num</A>\n";
+			$curr_seg_html =~ s/$seg_token/$seg_num/g;
+			push( @seg_list_html, $curr_seg_html );
 		}
 	}
 	
 	my $prev_seg_html = ($curr_seg_num == 1) ? "Previous\n" :
-		"<A HREF=\"$common_url@{[$curr_seg_num-1]}\">Previous</A>\n";
+		"<A HREF=\"$common_url\">Previous</A>\n";
+	$prev_seg_html =~ s/$seg_token/$curr_seg_num-1/ge;
 	
 	my $next_seg_html = ($curr_seg_num == $segments) ? "Next\n" :
-		"<A HREF=\"$common_url@{[$curr_seg_num+1]}\">Next</A>\n";
+		"<A HREF=\"$common_url\">Next</A>\n";
+	$next_seg_html =~ s/$seg_token/$curr_seg_num+1/ge;
 	
 	my $document_navbar =
 		<<__endquote.
@@ -234,8 +250,8 @@ __endquote
 </TR></TABLE>
 __endquote
 
-	$globals->body_prepend( [$document_navbar] );
-	$globals->body_append( [$document_navbar] );
+	$globals->prepend_page_body( [$document_navbar] );
+	$globals->append_page_body( [$document_navbar] );
 }
 
 ######################################################################
@@ -243,7 +259,7 @@ __endquote
 sub attach_document_header {
 	my $self = shift( @_ );
 	my $globals = $self->{$KEY_SITE_GLOBALS};
-	my $rh_prefs = $globals->site_prefs();
+	my $rh_prefs = $globals->get_prefs_ref();
 
 	my $title = $rh_prefs->{$PKEY_TITLE};
 	my $author = $rh_prefs->{$PKEY_AUTHOR};
@@ -251,13 +267,13 @@ sub attach_document_header {
 	my $updated = $rh_prefs->{$PKEY_UPDATED};
 	my $segments = $rh_prefs->{$PKEY_SEGMENTS};
 	
-	my $curr_seg_num = $globals->current_user_vrp_element();
+	my $curr_seg_num = $globals->current_user_path_element();
 	$title .= $segments > 1 ? ": $curr_seg_num / $segments" : '';
 	
-	$globals->title( $title );
+	$globals->page_title( $title );
 
-	$globals->body_prepend( <<__endquote );
-<H2>@{[$globals->title()]}</H2>
+	$globals->prepend_page_body( <<__endquote );
+<H2>@{[$globals->page_title()]}</H2>
 
 <P>Author: $author<BR>
 Created: $created<BR>
@@ -287,6 +303,6 @@ Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>.
 
 =head1 SEE ALSO
 
-perl(1), CGI::WPM::Base, CGI::WPM::Globals, CGI::WPM::Static.
+perl(1), HTML::Application, CGI::WPM::Base, CGI::WPM::Static.
 
 =cut

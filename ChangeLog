@@ -1,3 +1,25 @@
+2001-04-23   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.4.
+	
+	* Everything has been overhauled.  This distribution now features 10 Perl 5
+modules that are intended to be used with HTML::Application.  Eight of them are
+demo "application components", one performs user input and output, and one
+encapsulates a file format for counting events.
+
+	* CGI::WPM::Globals no longer exists.  All of the other modules are now 
+	written to use HTML::Application directly.  The small bit of code from 
+	Globals that did user input and output has been spun off into a new module 
+	named CGI::WPM::SimpleUserIO; that module is fully documented.
+	
+	* All modules are now more or less fully documented in some way or other.
+	
+	* All modules can no longer be called the way they were, except for 
+	CGI::WPM::CountFile.  However, all of their "preferences" continue to work 
+	the same as they did before.
+
+	* All modules are at version 0.4
+	
 2001-04-20   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.38.

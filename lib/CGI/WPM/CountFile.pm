@@ -19,7 +19,7 @@ require 5.004;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.36';
+$VERSION = '0.4';
 
 ######################################################################
 
@@ -938,6 +938,6 @@ the flexability to create nonexistant files on demand.
 
 =head1 SEE ALSO
 
-perl(1), Fcntl, Symbol.
+perl(1), CGI::WPM::Usage, Fcntl, Symbol.
 
 =cut
